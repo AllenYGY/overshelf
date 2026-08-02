@@ -1,0 +1,9 @@
+.DS_Store
+.codex/
+DropShelf.app/
+dist/
+build/
+.build/
+.swiftpm/
+*.xcworkspace/
+xcuserdata/
