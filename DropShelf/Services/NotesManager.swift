@@ -41,6 +41,12 @@ final class NotesManager {
         scheduleSave()
     }
 
+    func flush() {
+        saveTimer?.invalidate()
+        saveTimer = nil
+        saveToDisk()
+    }
+
     func search(_ query: String) -> [Note] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return notes }

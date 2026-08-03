@@ -3,7 +3,6 @@ import SwiftUI
 /// The file staging panel: drag files in, drag them out to any app or Finder.
 struct FilesPanelView: View {
     @Environment(FileStagingManager.self) private var files
-    @Environment(AppSettings.self) private var settings
     @Environment(UIState.self) private var uiState
 
     @State private var isDropTargeted = false
@@ -15,7 +14,7 @@ struct FilesPanelView: View {
                 title: "Files",
                 iconName: "tray.full",
                 onDetach: uiState.detachedPanels.contains(.files) ? nil : { detachFiles() },
-                onHide: uiState.detachedPanels.contains(.files) ? nil : { hidePanel() }
+                onReattach: uiState.detachedPanels.contains(.files) ? { reattachFiles() } : nil
             )
 
             if files.stagedFiles.isEmpty {
@@ -108,11 +107,10 @@ struct FilesPanelView: View {
         NotificationCenter.default.post(name: .detachPanel, object: nil, userInfo: ["panel": PanelType.files])
     }
 
-    private func hidePanel() {
-        var hidden = settings.hiddenPanels
-        hidden.insert(.files)
-        settings.hiddenPanels = hidden
+    private func reattachFiles() {
+        uiState.onReattachPanel?(.files)
     }
+
 }
 
 /// A single file row in the staging area.
@@ -121,10 +119,6 @@ struct FileRow: View {
     let isHovered: Bool
     let onReveal: () -> Void
     let onRemove: () -> Void
-    private var fileManager: FileStagingManager? {
-        // Resolve icon lazily; in a real app this would be passed in
-        nil
-    }
 
     var body: some View {
         HStack(spacing: 8) {

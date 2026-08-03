@@ -19,7 +19,7 @@ struct PanelHeader: View {
     let title: String
     let iconName: String
     var onDetach: (() -> Void)?
-    var onHide: (() -> Void)?
+    var onReattach: (() -> Void)?
 
     var body: some View {
         HStack(spacing: 6) {
@@ -30,14 +30,14 @@ struct PanelHeader: View {
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(.primary)
             Spacer()
-            if let onHide {
-                Button(action: onHide) {
-                    Image(systemName: "eye.slash")
+            if let onReattach {
+                Button(action: onReattach) {
+                    Image(systemName: "arrow.down.left.square")
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
-                .help("Hide panel")
+                .help("Reattach panel")
             }
             if let onDetach {
                 Button(action: onDetach) {

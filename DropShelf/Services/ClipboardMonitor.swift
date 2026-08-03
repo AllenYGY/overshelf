@@ -39,6 +39,17 @@ final class ClipboardMonitor {
         saveToDisk()
     }
 
+    /// Add a text item directly, used by tests and integrations that need to seed history.
+    func recordText(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        if items.first?.type == .text && items.first?.text == trimmed {
+            return
+        }
+        let item = ClipboardItem(type: .text, text: trimmed, timestamp: Date())
+        insertItem(item)
+    }
+
     private func check() {
         let pb = NSPasteboard.general
         guard pb.changeCount != lastChangeCount else { return }

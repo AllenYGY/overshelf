@@ -57,6 +57,12 @@ final class TodoManager {
         scheduleSave()
     }
 
+    func flush() {
+        saveTimer?.invalidate()
+        saveTimer = nil
+        saveToDisk()
+    }
+
     func move(from source: IndexSet, to destination: Int) {
         items.move(fromOffsets: source, toOffset: destination)
         scheduleSave()

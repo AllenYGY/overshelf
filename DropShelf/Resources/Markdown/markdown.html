@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown Preview</title>
+  <link rel="stylesheet" href="katex/katex.min.css">
+  <link rel="stylesheet" href="marked/markdown.css">
+  <style>
+    :root {
+      --border-color: #d9d9de;
+      --code-bg: #f2f2f4;
+      --text-color: #333;
+      --muted: #888;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --border-color: #3a3a3c;
+        --code-bg: #2d2d2f;
+        --text-color: #e8e8ea;
+        --muted: #9b9ba0;
+      }
+    }
+
+    html {
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text-color);
+      background: transparent;
+      margin: 0;
+      padding: 0;
+      overflow-wrap: break-word;
+    }
+
+    #markdown-content {
+      padding: 10px 12px 14px;
+      overflow-wrap: break-word;
+    }
+
+    #markdown-content > *:first-child {
+      margin-top: 0;
+    }
+    #markdown-content > *:last-child {
+      margin-bottom: 0;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      line-height: 1.25;
+      color: var(--text-color);
+      margin: 20px 0 10px;
+      font-weight: 700;
+    }
+    h1 { font-size: 1.85em; border-bottom: 2px solid var(--border-color); padding-bottom: 0.28em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.22em; }
+    h3 { font-size: 1.25em; }
+    h4 { font-size: 1.1em; }
+    h5 { font-size: 1em; color: var(--muted); }
+    h6 { font-size: 0.9em; color: var(--muted); text-transform: uppercase; letter-spacing: 0.02em; }
+
+    p { margin: 0 0 10px; }
+    ul, ol { margin: 0 0 10px; padding-left: 1.5em; }
+    li { margin-bottom: 2px; }
+    blockquote {
+      margin: 0 0 10px;
+      padding: 0 0.8em;
+      color: var(--muted);
+      border-left: 3px solid var(--border-color);
+    }
+    pre {
+      background-color: var(--code-bg);
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 0 0 10px;
+    }
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      background-color: var(--code-bg);
+      padding: 0.2em 0.35em;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    pre code {
+      background-color: transparent;
+      padding: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 10px;
+    }
+    th, td {
+      border: 1px solid var(--border-color);
+      padding: 5px 8px;
+    }
+    th { background: var(--code-bg); }
+    hr { border: 0; border-top: 1px solid var(--border-color); margin: 18px 0; }
+    img { max-width: 100%; height: auto; border-radius: 4px; }
+    a { color: #0a7cff; text-decoration: none; }
+
+    .math-block {
+      max-width: 100%;
+      overflow-x: auto;
+      padding: 0.5em 0;
+      margin: 0.5em 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="markdown-content"></div>
+  <script src="markdown-it/markdown-it.min.js"></script>
+  <script src="dompurify/purify.min.js"></script>
+  <script src="katex/katex.min.js"></script>
+  <script src="katex/auto-render.min.js"></script>
+  <script>
+    const md = window.markdownit({
+      html: false,
+      breaks: true,
+      linkify: true,
+      typographer: true
+    });
+
+    function renderMarkdown(markdownText, enableLatex) {
+      const container = document.getElementById('markdown-content');
+      if (!markdownText || !markdownText.trim()) {
+        container.innerHTML = '';
+        container.style.display = 'none';
+        return;
+      }
+      container.style.display = 'block';
+
+      const latexPlaceholders = [];
+      const protectedMarkdown = markdownText.replace(
+        /(\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\))/g,
+        function(match) {
+          latexPlaceholders.push(match);
+          return '@@LATEX_' + (latexPlaceholders.length - 1) + '@@';
+        }
+      );
+
+      let html = md.render(protectedMarkdown || '');
+      html = html.replace(/@@LATEX_(\d+)@@/g, function(_, idx) {
+        return latexPlaceholders[Number(idx)];
+      });
+      if (typeof DOMPurify !== 'undefined') {
+        html = DOMPurify.sanitize(html);
+      }
+      container.innerHTML = html;
+
+      if (enableLatex !== false && window.renderMathInElement) {
+        renderMathInElement(container, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "\\[", right: "\\]", display: true },
+            { left: "$", right: "$", display: false },
+            { left: "\\(", right: "\\)", display: false }
+          ],
+          throwOnError: false,
+          ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"]
+        });
+
+        document.querySelectorAll('.katex-display').forEach(function(math) {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'math-block';
+          math.parentNode.insertBefore(wrapper, math);
+          wrapper.appendChild(math);
+        });
+      }
+    }
+  </script>
+</body>
+</html>

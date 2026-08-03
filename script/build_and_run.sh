@@ -36,6 +36,30 @@ kill_app() {
   pkill -x "$APP_NAME" >/dev/null 2>&1 || true
 }
 
+compile_test() {
+  local output="$1"
+  shift
+  local errlog
+  errlog="$(mktemp)"
+  for attempt in 1 2 3; do
+    if swiftc "$@" -o "$output" 2>"$errlog"; then
+      rm -f "$errlog"
+      return 0
+    fi
+    if grep -q "modified during the build" "$errlog"; then
+      echo "Retrying swiftc compile (attempt $attempt) after transient source-file check..."
+      sleep 1
+      continue
+    fi
+    cat "$errlog" >&2
+    rm -f "$errlog"
+    return 1
+  done
+  cat "$errlog" >&2
+  rm -f "$errlog"
+  return 1
+}
+
 build_app() {
   mkdir -p "$DIST_DIR"
   echo "Building $APP_NAME..."
@@ -51,6 +75,7 @@ build_app() {
     -framework Cocoa \
     -framework SwiftUI \
     -framework Carbon \
+    -framework WebKit \
    -O \
    -o "$DIST_DIR/$APP_NAME" \
     DropShelf/App/*.swift \
@@ -74,6 +99,7 @@ stage_bundle() {
   cp "$DIST_DIR/$APP_NAME" "$STAGE_MACOS/$APP_NAME"
   chmod +x "$STAGE_MACOS/$APP_NAME"
   cp "$ROOT_DIR/DropShelf/Resources/AppIcon.icns" "$STAGE_RESOURCES/" 2>/dev/null || true
+  cp -R "$ROOT_DIR/DropShelf/Resources/Markdown" "$STAGE_RESOURCES/" 2>/dev/null || true
 
   # Copy Info.plist from source, expanding build variables
   sed \
@@ -97,6 +123,8 @@ stage_bundle() {
   mkdir -p "$DIST_DIR"
   rm -r "$APP_BUNDLE" 2>/dev/null || true
   mv "$STAGE_BUNDLE" "$APP_BUNDLE"
+  # The sandbox/filesystem may add provenance xattrs after move; keep the bundle clean.
+  xattr -cr "$APP_BUNDLE" 2>/dev/null || true
 }
 
 open_app() {
@@ -104,6 +132,11 @@ open_app() {
 }
 
 case "$MODE" in
+  build)
+    build_app
+    stage_bundle
+    echo "Built and staged $APP_BUNDLE"
+    ;;
   run)
     build_app
     stage_bundle
@@ -142,8 +175,110 @@ case "$MODE" in
       exit 1
     fi
     ;;
+  test)
+    build_app
+    stage_bundle
+    echo "Running migration test..."
+    compile_test "$DIST_DIR/MigrationTests" \
+      -target arm64-apple-macosx14.0 \
+      -sdk "$SDK_PATH" \
+      -I "$PATCHED_SWIFT" \
+      -L "$PATCHED_SWIFT" \
+      -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE" \
+      -swift-version 5 \
+      -framework Cocoa \
+      -framework SwiftUI \
+      -framework Carbon \
+      -framework WebKit \
+      DropShelf/Models/AppSettings.swift \
+      DropShelf/Services/PersistenceManager.swift \
+      Tests/MigrationTests/main.swift
+    "$DIST_DIR/MigrationTests"
+    echo "Running app services test..."
+    compile_test "$DIST_DIR/AppServicesTests" \
+      -target arm64-apple-macosx14.0 \
+      -sdk "$SDK_PATH" \
+      -I "$PATCHED_SWIFT" \
+      -L "$PATCHED_SWIFT" \
+      -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE" \
+      -swift-version 5 \
+      -framework Cocoa \
+      -framework SwiftUI \
+      -framework Carbon \
+      -framework WebKit \
+      DropShelf/Models/AppSettings.swift \
+      DropShelf/Models/ClipboardItem.swift \
+      DropShelf/Models/Note.swift \
+      DropShelf/Models/StagedFile.swift \
+      DropShelf/Models/TodoItem.swift \
+      DropShelf/Services/PersistenceManager.swift \
+      DropShelf/Services/NotesManager.swift \
+      DropShelf/Services/TodoManager.swift \
+      DropShelf/Services/FileStagingManager.swift \
+      DropShelf/Services/ClipboardMonitor.swift \
+      Tests/AppServicesTests/main.swift
+    "$DIST_DIR/AppServicesTests"
+    echo "Running top edge tracker test..."
+    compile_test "$DIST_DIR/TopEdgeTrackerTests" \
+      -target arm64-apple-macosx14.0 \
+      -sdk "$SDK_PATH" \
+      -I "$PATCHED_SWIFT" \
+      -L "$PATCHED_SWIFT" \
+      -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE" \
+      -swift-version 5 \
+      -framework Cocoa \
+      -framework SwiftUI \
+      DropShelf/Window/TopEdgeTracker.swift \
+      Tests/TopEdgeTrackerTests/main.swift
+    "$DIST_DIR/TopEdgeTrackerTests"
+    echo "Running panel frame test..."
+    compile_test "$DIST_DIR/PanelFrameTests" \
+      -target arm64-apple-macosx14.0 \
+      -sdk "$SDK_PATH" \
+      -I "$PATCHED_SWIFT" \
+      -L "$PATCHED_SWIFT" \
+      -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE" \
+      -swift-version 5 \
+      -framework CoreGraphics \
+      DropShelf/Window/PanelFrame.swift \
+      Tests/PanelFrameTests/main.swift
+    "$DIST_DIR/PanelFrameTests"
+    echo "Running markdown preview test..."
+    compile_test "$DIST_DIR/MarkdownPreviewTests" \
+      -target arm64-apple-macosx14.0 \
+      -sdk "$SDK_PATH" \
+      -I "$PATCHED_SWIFT" \
+      -L "$PATCHED_SWIFT" \
+      -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE" \
+      -swift-version 5 \
+      -framework Cocoa \
+      -framework WebKit \
+      Tests/MarkdownPreviewTests/main.swift
+    DROPSHELF_MARKDOWN_DIR="$APP_RESOURCES/Markdown" "$DIST_DIR/MarkdownPreviewTests"
+    echo "Running app bundle test..."
+    compile_test "$DIST_DIR/AppBundleTests" \
+      -target arm64-apple-macosx14.0 \
+      -sdk "$SDK_PATH" \
+      -I "$PATCHED_SWIFT" \
+      -L "$PATCHED_SWIFT" \
+      -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE" \
+      -swift-version 5 \
+      -framework Foundation \
+      Tests/AppBundleTests/main.swift
+    DROPSHELF_APP_BUNDLE="$APP_BUNDLE" "$DIST_DIR/AppBundleTests"
+    echo "Running app launch check..."
+    open_app
+    sleep 2
+    if pgrep -x "$APP_NAME" >/dev/null; then
+      echo "App launch check passed"
+      kill_app
+    else
+      echo "App launch check FAIL: $APP_NAME not running"
+      exit 1
+    fi
+    ;;
   *)
-    echo "usage: $0 [run|--debug|--logs|--telemetry|--verify]" >&2
+    echo "usage: $0 [build|run|--debug|--logs|--telemetry|--verify|test]" >&2
     exit 2
     ;;
 esac

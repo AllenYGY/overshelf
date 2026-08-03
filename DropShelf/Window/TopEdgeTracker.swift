@@ -13,6 +13,7 @@ final class TopEdgeTracker {
     var onShow: (() -> Void)?
     var onHide: (() -> Void)?
     var onDragToTop: (() -> Void)?
+    var panelFrameProvider: (() -> NSRect)?
 
     var isEnabled: Bool = true
     var dragToTopEnabled: Bool = true
@@ -39,8 +40,12 @@ final class TopEdgeTracker {
 
         // Click-outside auto-hide
         clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] _ in
-            guard self?.isWindowVisible == true else { return }
-            self?.onHide?()
+            guard let self = self else { return }
+            let mouse = NSEvent.mouseLocation
+            let frame = self.panelFrameProvider?() ?? .zero
+            if self.shouldHideOnClick(at: mouse, panelFrame: frame) {
+                self.onHide?()
+            }
         }
 
         // Drag-to-top (for file dragging)
@@ -49,7 +54,7 @@ final class TopEdgeTracker {
         }
 
         // Fallback timer (low frequency, events handle the rest)
-        fallbackTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
+        fallbackTimer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { [weak self] _ in
             self?.checkTrigger()
         }
         RunLoop.main.add(fallbackTimer!, forMode: .common)
@@ -100,9 +105,18 @@ final class TopEdgeTracker {
         // Only handles SHOW — hide is via click-outside or hotkey toggle
         guard !isWindowVisible else { return }
         let cmdHeld = NSEvent.modifierFlags.contains(.command)
-        let atTop = isMouseAtTopEdge()
-        if isEnabled && cmdHeld && atTop {
+        if shouldShowAt(cmdHeld: cmdHeld, mouseY: NSEvent.mouseLocation.y, screenMaxY: screenWithMouse()?.visibleFrame.maxY ?? 0) {
             onShow?()
         }
+    }
+
+    /// Pure trigger predicate so the hot-zone logic can be unit tested.
+    func shouldShowAt(cmdHeld: Bool, mouseY: CGFloat, screenMaxY: CGFloat) -> Bool {
+        isEnabled && cmdHeld && mouseY >= screenMaxY
+    }
+
+    /// Pure click-outside predicate so the auto-hide behavior can be unit tested.
+    func shouldHideOnClick(at mouse: NSPoint, panelFrame: NSRect) -> Bool {
+        isWindowVisible && !panelFrame.contains(mouse)
     }
 }

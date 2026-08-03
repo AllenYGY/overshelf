@@ -3,7 +3,6 @@ import SwiftUI
 /// The quick notes panel: create, edit, search, pin, and delete notes.
 struct NotesPanelView: View {
     @Environment(NotesManager.self) private var notes
-    @Environment(AppSettings.self) private var settings
     @Environment(UIState.self) private var uiState
 
     @State private var searchText = ""
@@ -22,7 +21,7 @@ struct NotesPanelView: View {
                 title: "Notes",
                 iconName: "note.text",
                 onDetach: uiState.detachedPanels.contains(.notes) ? nil : { detachNotes() },
-                onHide: uiState.detachedPanels.contains(.notes) ? nil : { hidePanel() }
+                onReattach: uiState.detachedPanels.contains(.notes) ? { reattachNotes() } : nil
             )
 
             if let id = selectedNoteId, let note = notes.notes.first(where: { $0.id == id }) {
@@ -65,6 +64,7 @@ struct NotesPanelView: View {
                     let note = notes.createNote()
                     selectedNoteId = note.id
                     noteBody = ""
+                    isPreviewing = false
                 } label: {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 16))
@@ -95,6 +95,7 @@ struct NotesPanelView: View {
                                 onTap: {
                                     selectedNoteId = note.id
                                     noteBody = note.body
+                                    isPreviewing = false
                                 },
                                 onPin: { notes.togglePin(id: note.id) },
                                 onDelete: {
@@ -131,12 +132,17 @@ struct NotesPanelView: View {
 
             Spacer()
 
-            Picker("Mode", selection: $isPreviewing) {
-                Image(systemName: "pencil.line").tag(false)
-                Image(systemName: "eye").tag(true)
+            HStack(spacing: 2) {
+                modeButton(title: "Edit", isActive: !isPreviewing) {
+                    isPreviewing = false
+                }
+                modeButton(title: "Preview", isActive: isPreviewing) {
+                    isPreviewing = true
+                }
             }
-            .pickerStyle(.segmented)
-            .frame(width: 60)
+            .padding(2)
+            .background(Color(nsColor: .unemphasizedSelectedContentBackgroundColor).opacity(0.5))
+            .cornerRadius(6)
 
             Button { notes.togglePin(id: note.id) } label: {
                 Image(systemName: note.pinned ? "pin.fill" : "pin")
@@ -163,14 +169,8 @@ struct NotesPanelView: View {
 
             // Editor
             if isPreviewing {
-                ScrollView {
-                    Text(MarkdownRenderer.attributedString(for: noteBody))
-                        .font(.system(size: 13))
-                        .textSelection(.enabled)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
+                MarkdownPreviewView(markdown: noteBody)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 TextEditor(text: $noteBody)
                     .font(.system(size: 13))
@@ -184,15 +184,28 @@ struct NotesPanelView: View {
         }
     }
 
+    @ViewBuilder
+    private func modeButton(title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 11, weight: isActive ? .semibold : .regular))
+                .foregroundStyle(isActive ? Color.white : Color.secondary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 2)
+                .background(isActive ? Color.accentColor : Color.clear)
+                .cornerRadius(4)
+        }
+        .buttonStyle(.plain)
+    }
+
     private func detachNotes() {
         NotificationCenter.default.post(name: .detachPanel, object: nil, userInfo: ["panel": PanelType.notes])
     }
 
-    private func hidePanel() {
-        var hidden = settings.hiddenPanels
-        hidden.insert(.notes)
-        settings.hiddenPanels = hidden
+    private func reattachNotes() {
+        uiState.onReattachPanel?(.notes)
     }
+
 }
 
 /// A single note row in the list.

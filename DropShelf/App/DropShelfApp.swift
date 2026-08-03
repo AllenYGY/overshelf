@@ -7,13 +7,7 @@ struct DropShelfApp: App {
     var body: some Scene {
         // Status bar icon + menu using native MenuBarExtra
         MenuBarExtra("DropShelf", systemImage: "rectangle.stack.badge.plus") {
-            Button("Show/Hide DropShelf") { appDelegate.windowManager.toggle() }
-                .keyboardShortcut("c", modifiers: [.command, .shift])
-            Divider()
-            SettingsLink { Text("Preferences…") }
-            Divider()
-            Button("Quit DropShelf") { NSApp.terminate(nil) }
-                .keyboardShortcut("q")
+            StatusBarMenu(appDelegate: appDelegate)
         }
 
         Settings {
@@ -33,5 +27,63 @@ struct DropShelfApp: App {
                     .keyboardShortcut("k", modifiers: [.command, .shift])
             }
         }
+    }
+}
+
+private struct StatusBarMenu: View {
+    let appDelegate: AppDelegate
+    @Environment(\.openSettings) private var openSettings
+
+    var body: some View {
+        Button("Show/Hide DropShelf") { appDelegate.windowManager.toggle() }
+            .keyboardShortcut("c", modifiers: [.command, .shift])
+        Divider()
+
+        Button("New Note") {
+            appDelegate.windowManager.show(source: .hotkey)
+            appDelegate.notes.createNote()
+        }
+
+        Button("New Todo") {
+            appDelegate.windowManager.show(source: .hotkey)
+            appDelegate.todos.createTodo(title: "New task")
+        }
+
+        Button("Clear Clipboard History") {
+            appDelegate.clipboard.clearHistory()
+        }
+
+        Menu("Panels") {
+            ForEach(PanelType.allCases) { panel in
+                let visible = !appDelegate.settings.hiddenPanels.contains(panel)
+                Button {
+                    var hidden = appDelegate.settings.hiddenPanels
+                    if visible {
+                        if appDelegate.settings.panelOrder.count - hidden.count > 1 {
+                            hidden.insert(panel)
+                        }
+                    } else {
+                        hidden.remove(panel)
+                    }
+                    appDelegate.settings.hiddenPanels = hidden
+                } label: {
+                    Label(panel.title, systemImage: visible ? "checkmark" : "minus")
+                }
+            }
+        }
+
+        Divider()
+
+        Button("Preferences…") {
+            appDelegate.windowManager.hide()
+            NSApp.activate(ignoringOtherApps: true)
+            openSettings()
+        }
+        .keyboardShortcut(",", modifiers: [.command])
+
+        Divider()
+
+        Button("Quit DropShelf") { NSApp.terminate(nil) }
+            .keyboardShortcut("q")
     }
 }

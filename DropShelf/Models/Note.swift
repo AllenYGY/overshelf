@@ -21,7 +21,15 @@ struct Note: Codable, Identifiable, Hashable {
     /// Derive a title from the first non-empty line of body.
     static func deriveTitle(from body: String) -> String {
         let firstLine = body.components(separatedBy: .newlines).first { !$0.trimmingCharacters(in: .whitespaces).isEmpty } ?? ""
-        let trimmed = firstLine.trimmingCharacters(in: .whitespaces)
+        var trimmed = firstLine.trimmingCharacters(in: .whitespaces)
+        // Strip Markdown heading markers so the list shows "Title" instead of "# Title".
+        while trimmed.hasPrefix("#") {
+            trimmed.removeFirst()
+            if trimmed.hasPrefix(" ") {
+                trimmed.removeFirst()
+            }
+        }
+        trimmed = trimmed.trimmingCharacters(in: .whitespaces)
         return trimmed.isEmpty ? "Untitled" : String(trimmed.prefix(60))
     }
 

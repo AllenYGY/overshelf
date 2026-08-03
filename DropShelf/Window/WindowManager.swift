@@ -79,6 +79,7 @@ final class WindowManager {
     private func setupEdgeTracker() {
         edgeTracker.isEnabled = settings.edgeTriggerEnabled
         edgeTracker.dragToTopEnabled = settings.dragToEdgeEnabled
+        edgeTracker.panelFrameProvider = { [weak self] in self?.panel?.frame ?? .zero }
         edgeTracker.onShow = { [weak self] in self?.show(source: .edge) }
         edgeTracker.onHide = { [weak self] in self?.hide() }
         edgeTracker.onDragToTop = { [weak self] in self?.show(source: .drag) }
@@ -114,36 +115,38 @@ final class WindowManager {
     }
 
     func show(source: TopEdgeTracker.ShowSource = .hotkey) {
-        guard !uiState.isWindowVisible, !isAnimating else { return }
+        guard !uiState.isWindowVisible else { return }
         guard let panel = panel, let screen = screenWithMouse() else { return }
 
+        animationTimer?.invalidate()
+        animationTimer = nil
         isAnimating = true
         uiState.isWindowVisible = true
         edgeTracker.windowDidShow(source: source)
 
-        let screenWidth = screen.frame.width
         let height = settings.windowHeight
-        let targetY = screen.frame.maxY - height
+        let targetFrame = dropdownPanelFrame(screenFrame: screen.frame, height: height)
+        let targetY = targetFrame.minY
         let startY = screen.frame.maxY
         let x = screen.frame.minX
         let alpha = CGFloat(settings.windowOpacity)
 
         // Start: above screen, full alpha immediately (no fade — clean slide)
-        panel.setFrame(NSRect(x: x, y: startY, width: screenWidth, height: height), display: false)
+        panel.setFrame(NSRect(x: x, y: startY, width: targetFrame.width, height: height), display: false)
         panel.alphaValue = alpha
         panel.orderFrontRegardless()
 
-        // Slide-down: 20 steps, 0.15s, easeOutQuart
-        let steps = 30
-        let dt = 0.30 / Double(steps)
+        // Slide-down: smooth, gradual ease-out.
+        let steps = 60
+        let dt = 1.0 / Double(steps)
         var step = 0
         animationTimer = Timer.scheduledTimer(withTimeInterval: dt, repeats: true) { [weak self] timer in
             guard let self = self, let panel = self.panel else { timer.invalidate(); return }
             step += 1
             let p = CGFloat(step) / CGFloat(steps)
-            let eased = 1.0 - pow(1.0 - p, 4)
+            let eased = 1.0 - pow(1.0 - p, 3)
             let y = startY + (targetY - startY) * eased
-            panel.setFrame(NSRect(x: x, y: y, width: screenWidth, height: height), display: true)
+            panel.setFrame(NSRect(x: x, y: y, width: targetFrame.width, height: height), display: true)
             if step >= steps {
                 timer.invalidate()
                 self.animationTimer = nil
@@ -154,9 +157,11 @@ final class WindowManager {
     }
 
     func hide() {
-        guard uiState.isWindowVisible, !isAnimating else { return }
+        guard uiState.isWindowVisible else { return }
         guard let panel = panel, let screen = screenWithMouse() else { return }
 
+        animationTimer?.invalidate()
+        animationTimer = nil
         isAnimating = true
         uiState.isWindowVisible = false
         edgeTracker.windowDidHide()
@@ -164,15 +169,15 @@ final class WindowManager {
         let sf = panel.frame
         let endY = screen.frame.maxY
 
-        // Slide-up: 16 steps, 0.12s, easeInQuart
-        let steps = 24
-        let dt = 0.25 / Double(steps)
+        // Slide-up: smooth, noticeably slower ease-in.
+        let steps = 50
+        let dt = 0.65 / Double(steps)
         var step = 0
         animationTimer = Timer.scheduledTimer(withTimeInterval: dt, repeats: true) { [weak self] timer in
             guard let self = self, let panel = self.panel else { timer.invalidate(); return }
             step += 1
             let p = CGFloat(step) / CGFloat(steps)
-            let eased = pow(p, 4)
+            let eased = pow(p, 3)
             let y = sf.minY + (endY - sf.minY) * eased
             panel.setFrame(NSRect(x: sf.minX, y: y, width: sf.width, height: sf.height), display: true)
             if step >= steps {
@@ -208,6 +213,9 @@ final class WindowManager {
             contentRect: NSRect(x: x, y: y, width: width, height: height),
             title: type.title
         )
+        detachedPanel.onClose = { [weak self] in
+            self?.reattachPanel(type)
+        }
 
        let content = panelContentView(for: type)
             .environment(clipboard)

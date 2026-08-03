@@ -3,7 +3,6 @@ import SwiftUI
 /// The clipboard history panel: shows recent + favorites, search, click-to-paste.
 struct ClipboardPanelView: View {
     @Environment(ClipboardMonitor.self) private var clipboard
-    @Environment(AppSettings.self) private var settings
     @Environment(UIState.self) private var uiState
 
     @State private var searchText = ""
@@ -22,7 +21,7 @@ struct ClipboardPanelView: View {
                 title: "Clipboard",
                 iconName: "clipboard",
                 onDetach: uiState.detachedPanels.contains(.clipboard) ? nil : { detachClipboard() },
-                onHide: uiState.detachedPanels.contains(.clipboard) ? nil : { hidePanel() }
+                onReattach: uiState.detachedPanels.contains(.clipboard) ? { reattachClipboard() } : nil
             )
 
             // Tab switcher
@@ -132,11 +131,10 @@ struct ClipboardPanelView: View {
         NotificationCenter.default.post(name: .detachPanel, object: nil, userInfo: ["panel": PanelType.clipboard])
     }
 
-    private func hidePanel() {
-        var hidden = settings.hiddenPanels
-        hidden.insert(.clipboard)
-        settings.hiddenPanels = hidden
+    private func reattachClipboard() {
+        uiState.onReattachPanel?(.clipboard)
     }
+
 }
 
 /// A single clipboard history row.

@@ -33,6 +33,7 @@ final class DropDownPanel: NSPanel {
 final class DetachedPanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+    var onClose: (() -> Void)?
 
     init(contentRect: NSRect, title: String) {
         super.init(
@@ -47,5 +48,10 @@ final class DetachedPanel: NSPanel {
         self.isReleasedWhenClosed = false
         self.hidesOnDeactivate = false
         self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+    }
+
+    override func close() {
+        onClose?()
+        super.close()
     }
 }

@@ -55,6 +55,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        notes.flush()
+        todos.flush()
         windowManager.teardown()
     }
 
@@ -62,4 +64,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidBecomeActive(_ notification: Notification) {
         NSApp.activate(ignoringOtherApps: true)
     }
+
 }

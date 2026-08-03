@@ -54,6 +54,7 @@ final class AppSettings {
     init(persistence: PersistenceManager) {
         self.persistence = persistence
         self.data = persistence.load(AppSettingsData.self, forKey: "settings") ?? AppSettingsData()
+        migrateIfNeeded()
     }
 
     var panelOrder: [PanelType] {
@@ -113,6 +114,36 @@ final class AppSettings {
 
     var visiblePanels: [PanelType] {
         data.panelOrder.filter { !data.hiddenPanels.contains($0) }
+    }
+
+    static func visiblePanels(from order: [PanelType], hidden: Set<PanelType>, detached: Set<PanelType>) -> [PanelType] {
+        order.filter { !hidden.contains($0) && !detached.contains($0) }
+    }
+
+    private func migrateIfNeeded() {
+        var changed = false
+        for panel in PanelType.allCases {
+            if !data.panelOrder.contains(panel) {
+                data.panelOrder.append(panel)
+                changed = true
+            }
+            if data.panelWidths[panel] == nil {
+                data.panelWidths[panel] = defaultWidth(for: panel)
+                changed = true
+            }
+        }
+        if changed {
+            save()
+        }
+    }
+
+    private func defaultWidth(for panel: PanelType) -> CGFloat {
+        switch panel {
+        case .clipboard: return 260
+        case .files: return 240
+        case .notes: return 280
+        case .todo: return 260
+        }
     }
 
     private func save() {

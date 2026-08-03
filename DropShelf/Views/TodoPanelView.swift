@@ -3,7 +3,6 @@ import SwiftUI
 /// The todo list panel: create, edit, complete, and filter tasks.
 struct TodoPanelView: View {
     @Environment(TodoManager.self) private var todos
-    @Environment(AppSettings.self) private var settings
     @Environment(UIState.self) private var uiState
 
     @State private var searchText = ""
@@ -25,7 +24,7 @@ struct TodoPanelView: View {
                 title: "Todo",
                 iconName: "checklist",
                 onDetach: uiState.detachedPanels.contains(.todo) ? nil : { detachTodo() },
-                onHide: uiState.detachedPanels.contains(.todo) ? nil : { hidePanel() }
+                onReattach: uiState.detachedPanels.contains(.todo) ? { reattachTodo() } : nil
             )
 
             VStack(spacing: 0) {
@@ -147,11 +146,10 @@ struct TodoPanelView: View {
         NotificationCenter.default.post(name: .detachPanel, object: nil, userInfo: ["panel": PanelType.todo])
     }
 
-    private func hidePanel() {
-        var hidden = settings.hiddenPanels
-        hidden.insert(.todo)
-        settings.hiddenPanels = hidden
+    private func reattachTodo() {
+        uiState.onReattachPanel?(.todo)
     }
+
 }
 
 enum TodoFilter: String, CaseIterable, Identifiable {
@@ -182,6 +180,7 @@ struct TodoRow: View {
     @State private var isHovered = false
     @State private var isEditing = false
     @State private var editText = ""
+    @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
         HStack(spacing: 8) {
@@ -197,9 +196,16 @@ struct TodoRow: View {
                     TextField("Task", text: $editText)
                         .textFieldStyle(.plain)
                         .font(.system(size: 12))
+                        .focused($isTextFieldFocused)
                         .onSubmit {
                             onUpdateTitle(editText)
                             isEditing = false
+                        }
+                        .onChange(of: isTextFieldFocused) { _, focused in
+                            if !focused && isEditing {
+                                onUpdateTitle(editText)
+                                isEditing = false
+                            }
                         }
                         .onExitCommand {
                             editText = item.title
@@ -214,6 +220,7 @@ struct TodoRow: View {
                         .onTapGesture(count: 2) {
                             editText = item.title
                             isEditing = true
+                            isTextFieldFocused = true
                         }
                 }
 
@@ -247,6 +254,18 @@ struct TodoRow: View {
 
             if isHovered || isEditing {
                 HStack(spacing: 6) {
+                    Button {
+                        editText = item.title
+                        isEditing = true
+                        isTextFieldFocused = true
+                    } label: {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Rename task")
+
                     DatePicker(
                         "",
                         selection: Binding(
@@ -275,6 +294,12 @@ struct TodoRow: View {
         .contentShape(Rectangle())
         .contextMenu {
             Button(item.isCompleted ? "Mark incomplete" : "Mark complete") { onToggle() }
+            Divider()
+            Button("Rename") {
+                editText = item.title
+                isEditing = true
+                isTextFieldFocused = true
+            }
             Divider()
             Menu("Priority") {
                 ForEach(TodoItem.Priority.allCases) { priority in

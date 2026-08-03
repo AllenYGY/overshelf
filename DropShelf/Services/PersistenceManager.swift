@@ -5,10 +5,14 @@ final class PersistenceManager {
     private let fileManager = FileManager.default
     let appSupportURL: URL
 
-    init() {
-        let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
-        appSupportURL = base.appendingPathComponent("DropShelf", isDirectory: true)
+    init(baseURL: URL? = nil) {
+        if let baseURL {
+            appSupportURL = baseURL
+        } else {
+            let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+                ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
+            appSupportURL = base.appendingPathComponent("DropShelf", isDirectory: true)
+        }
         try? fileManager.createDirectory(at: appSupportURL, withIntermediateDirectories: true)
     }
 

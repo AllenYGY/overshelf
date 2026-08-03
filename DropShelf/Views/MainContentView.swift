@@ -10,7 +10,7 @@ struct MainContentView: View {
     @Environment(TodoManager.self) private var todos
 
     var visiblePanels: [PanelType] {
-        settings.visiblePanels
+        AppSettings.visiblePanels(from: settings.panelOrder, hidden: settings.hiddenPanels, detached: uiState.detachedPanels)
     }
 
     var body: some View {
@@ -35,26 +35,44 @@ struct MainContentView: View {
                     }
                 }
 
-                // Bug #2 fix: show hidden panels button
-                if !settings.data.hiddenPanels.isEmpty {
-                    Menu {
-                        ForEach(Array(settings.data.hiddenPanels), id: \.self) { panel in
-                            Button(panel.title) {
+                // Always-visible panel manager so hidden panels can be restored.
+                Menu {
+                    ForEach(settings.panelOrder) { panel in
+                        let detached = uiState.detachedPanels.contains(panel)
+                        let visible = !settings.hiddenPanels.contains(panel)
+                        if detached {
+                            Button {
+                                uiState.onReattachPanel?(panel)
+                            } label: {
+                                Label("Reattach \(panel.title)", systemImage: "arrow.down.left.square")
+                            }
+                        } else {
+                            Button {
                                 var hidden = settings.hiddenPanels
-                                hidden.remove(panel)
+                                if visible {
+                                    // Keep at least one panel visible.
+                                    if settings.panelOrder.count - settings.hiddenPanels.count > 1 {
+                                        hidden.insert(panel)
+                                    }
+                                } else {
+                                    hidden.remove(panel)
+                                }
                                 settings.hiddenPanels = hidden
+                            } label: {
+                                Label(panel.title, systemImage: visible ? "checkmark" : "minus")
                             }
                         }
-                    } label: {
-                        Image(systemName: "plus.rectangle.on.rectangle")
-                            .font(.system(size: 14))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 28, height: 28)
                     }
-                    .menuStyle(.borderlessButton)
-                    .frame(width: 36)
-                    .background(Theme.sidebarBg)
+                } label: {
+                    Image(systemName: "square.grid.2x2")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 28, height: 28)
                 }
+                .menuStyle(.borderlessButton)
+                .frame(width: 36)
+                .background(Theme.sidebarBg)
+                .help("Panels")
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipShape(RoundedRectangle(cornerRadius: 0, style: .continuous))

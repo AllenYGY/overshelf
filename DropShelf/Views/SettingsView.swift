@@ -27,7 +27,7 @@ struct SettingsView: View {
 
         return Form {
             Section("Triggers") {
-                Toggle("Edge trigger (mouse to top + scroll)", isOn: Binding(
+                Toggle("Cmd + mouse at top edge", isOn: Binding(
                     get: { settings.edgeTriggerEnabled },
                     set: { uiState.onEdgeTriggerChange?($0) }
                 ))
@@ -82,7 +82,8 @@ struct SettingsView: View {
                                 .frame(width: 20)
                             Text(panel.title)
                             Spacer()
-                            Button("Hide") {
+                            let isHidden = settings.hiddenPanels.contains(panel)
+                            Button(isHidden ? "Show" : "Hide") {
                                 var hidden = settings.hiddenPanels
                                 if hidden.contains(panel) {
                                     hidden.remove(panel)
@@ -95,13 +96,20 @@ struct SettingsView: View {
                                 }
                             }
                             .buttonStyle(.borderless)
-                            .foregroundStyle(settings.hiddenPanels.contains(panel) ? Color.secondary : Color.accentColor)
+                            .foregroundStyle(isHidden ? Color.secondary : Color.accentColor)
                         }
                     }
                     .onMove { indices, newOffset in
                         var order = settings.panelOrder
                         order.move(fromOffsets: indices, toOffset: newOffset)
                         settings.panelOrder = order
+                    }
+                }
+                Button("Restore all panels") {
+                    settings.hiddenPanels = []
+                    let detached = Array(uiState.detachedPanels)
+                    for panel in detached {
+                        uiState.onReattachPanel?(panel)
                     }
                 }
             }
