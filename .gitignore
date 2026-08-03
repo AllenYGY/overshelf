@@ -1,9 +1,24 @@
+# macOS
 .DS_Store
+*.swp
+
+# Codex / agent local state
 .codex/
-DropShelf.app/
+
+# Build output
 dist/
+DropShelf.app/
 build/
-.build/
-.swiftpm/
+*.o
+*.dSYM
+
+# Xcode / Swift
+*.xcodeproj/
 *.xcworkspace/
 xcuserdata/
+DerivedData/
+.build/
+.swiftpm/
+
+# Local screenshots (regenerate with script/capture_screenshots.sh)
+docs/screenshots/*.png
