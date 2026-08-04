@@ -9,7 +9,7 @@ desktop clutter. Built with Swift and SwiftUI.
 > OverShelf is an original app inspired by the classic "dropdown drawer"
 > interaction pattern. It is not affiliated with any existing product.
 
-![OverShelf panel](overshelf/docs/screenshots/App.png)
+![OverShelf panel](docs/screenshots/App.png)
 
 ---
 
@@ -131,7 +131,7 @@ localized guide.
 > **Screen Recording** permission to the terminal. Run it once you've built the
 > app; it drops PNGs into `docs/screenshots/`.
 
-![OverShelf panel](overshelf/docs/screenshots/App.png)
+![OverShelf panel](docs/screenshots/App.png)
 
 > The panel slides down from the top of the screen, full width, with
 > Clipboard, Files, Notes, and Todo side by side. Capture more views
