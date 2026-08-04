@@ -20,6 +20,4 @@ DerivedData/
 .build/
 .swiftpm/
 
-# Local screenshots (regenerate with script/capture_screenshots.sh)
-docs/screenshots/*.png
 homebrew-tap

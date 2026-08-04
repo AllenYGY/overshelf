@@ -8,6 +8,7 @@ struct MainContentView: View {
     @Environment(NotesManager.self) private var notes
     @Environment(FileStagingManager.self) private var files
     @Environment(TodoManager.self) private var todos
+    @State private var heightDragBase: CGFloat?
 
     var visiblePanels: [PanelType] {
         AppSettings.visiblePanels(from: settings.panelOrder, hidden: settings.hiddenPanels, detached: uiState.detachedPanels)
@@ -75,7 +76,40 @@ struct MainContentView: View {
                 .help("Panels")
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipShape(RoundedRectangle(cornerRadius: 0, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            // Bottom drag handle for live height resize (persisted on release).
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    Capsule()
+                        .fill(Color.primary.opacity(0.12))
+                        .frame(width: 40, height: 3)
+                    Spacer()
+                }
+                .frame(height: 8)
+                .contentShape(Rectangle())
+                .onHover { hovering in
+                    if hovering { NSCursor.resizeUpDown.push() } else { NSCursor.pop() }
+                }
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            if heightDragBase == nil {
+                                heightDragBase = settings.windowHeight
+                            }
+                            let h = min(700, max(280, heightDragBase! + value.translation.height))
+                            uiState.onLiveHeightChange?(h)
+                        }
+                        .onEnded { value in
+                            let base = heightDragBase ?? settings.windowHeight
+                            let h = min(700, max(280, base + value.translation.height))
+                            settings.windowHeight = h
+                            heightDragBase = nil
+                        }
+                )
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .detachPanel)) { note in
             if let panel = note.userInfo?["panel"] as? PanelType {

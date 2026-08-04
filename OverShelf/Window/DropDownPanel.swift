@@ -8,24 +8,19 @@ final class DropDownPanel: NSPanel {
     init(contentRect: NSRect) {
         super.init(
             contentRect: contentRect,
-            styleMask: [.titled, .fullSizeContentView, .resizable],
+            styleMask: [.borderless],
             backing: .buffered,
             defer: false
         )
         self.isFloatingPanel = true
         self.level = .floating
         self.isOpaque = false
-        self.backgroundColor = NSColor.windowBackgroundColor
+        self.backgroundColor = .clear
         self.hasShadow = true
         self.isMovableByWindowBackground = false
         self.hidesOnDeactivate = false
         self.isReleasedWhenClosed = false
         self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        self.titleVisibility = .hidden
-        self.titlebarAppearsTransparent = true
-        self.standardWindowButton(.closeButton)?.isHidden = true
-        self.standardWindowButton(.miniaturizeButton)?.isHidden = true
-        self.standardWindowButton(.zoomButton)?.isHidden = true
     }
 }
 

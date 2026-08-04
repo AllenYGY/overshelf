@@ -181,6 +181,7 @@ struct TodoRow: View {
     @State private var isEditing = false
     @State private var editText = ""
     @FocusState private var isTextFieldFocused: Bool
+    @State private var showDatePicker = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -252,7 +253,7 @@ struct TodoRow: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            if isHovered || isEditing {
+            if isHovered || isEditing || showDatePicker {
                 HStack(spacing: 6) {
                     Button {
                         editText = item.title
@@ -266,17 +267,38 @@ struct TodoRow: View {
                     .buttonStyle(.plain)
                     .help("Rename task")
 
-                    DatePicker(
-                        "",
-                        selection: Binding(
-                            get: { item.dueDate ?? Date() },
-                            set: { onUpdateDueDate($0) }
-                        ),
-                        displayedComponents: [.date]
-                    )
-                    .datePickerStyle(.field)
-                    .frame(width: 90)
-                    .opacity(item.dueDate == nil ? 0.5 : 1.0)
+                    Button {
+                        showDatePicker.toggle()
+                    } label: {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 11))
+                            .foregroundStyle(item.dueDate == nil ? .secondary : Color.accentColor)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Set due date")
+                    .popover(isPresented: $showDatePicker, arrowEdge: .top) {
+                        VStack(spacing: 8) {
+                            DatePicker(
+                                "Due",
+                                selection: Binding(
+                                    get: { item.dueDate ?? Date() },
+                                    set: { onUpdateDueDate($0) }
+                                ),
+                                displayedComponents: [.date]
+                            )
+                            .datePickerStyle(.graphical)
+                            .labelsHidden()
+                            if item.dueDate != nil {
+                                Button("Clear due date") {
+                                    onUpdateDueDate(nil)
+                                    showDatePicker = false
+                                }
+                                .font(.system(size: 11))
+                            }
+                        }
+                        .padding(10)
+                        .frame(width: 240)
+                    }
 
                     Button { onDelete() } label: {
                         Image(systemName: "trash")

@@ -35,4 +35,16 @@ guard tracker.shouldHideOnClick(at: NSPoint(x: 900, y: 200), panelFrame: panelFr
     fail("Click outside panel should hide")
 }
 
+// Drag-to-top only triggers when the drag started below the top edge,
+// filtering out accidental menu-bar icon drags.
+guard tracker.shouldTriggerDrag(dragStartY: 500, mouseY: 1200, screenMaxY: 1200) else {
+    fail("Drag from below top edge into it should trigger")
+}
+guard !tracker.shouldTriggerDrag(dragStartY: 1200, mouseY: 1200, screenMaxY: 1200) else {
+    fail("Drag starting in the menu bar should not trigger")
+}
+guard !tracker.shouldTriggerDrag(dragStartY: 500, mouseY: 1199, screenMaxY: 1200) else {
+    fail("Drag not yet reaching the top edge should not trigger")
+}
+
 print("Top edge tracker test passed")

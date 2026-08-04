@@ -9,15 +9,6 @@ struct OverShelfApp: App {
         MenuBarExtra("OverShelf", systemImage: "rectangle.stack.badge.plus") {
             StatusBarMenu(appDelegate: appDelegate)
         }
-
-        Settings {
-            SettingsView()
-                .environment(appDelegate.clipboard)
-                .environment(appDelegate.notes)
-                .environment(appDelegate.files)
-                .environment(appDelegate.settings)
-                .environment(appDelegate.windowManager.uiState)
-        }
         .commands {
             CommandMenu("OverShelf") {
                 Button("Toggle Window") { appDelegate.windowManager.toggle() }
@@ -25,14 +16,17 @@ struct OverShelfApp: App {
                 Divider()
                 Button("Clear Clipboard History") { appDelegate.clipboard.clearHistory() }
                     .keyboardShortcut("k", modifiers: [.command, .shift])
+                Divider()
+                Button("Preferences…") { appDelegate.showSettings() }
+                    .keyboardShortcut(",", modifiers: [.command])
             }
         }
+
     }
 }
 
 private struct StatusBarMenu: View {
     let appDelegate: AppDelegate
-    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         Button("Show/Hide OverShelf") { appDelegate.windowManager.toggle() }
@@ -75,9 +69,7 @@ private struct StatusBarMenu: View {
         Divider()
 
         Button("Preferences…") {
-            appDelegate.windowManager.hide()
-            NSApp.activate(ignoringOtherApps: true)
-            openSettings()
+            appDelegate.showSettings()
         }
         .keyboardShortcut(",", modifiers: [.command])
 

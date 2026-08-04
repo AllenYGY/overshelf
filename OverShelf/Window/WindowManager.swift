@@ -13,6 +13,7 @@ final class UIState {
     var onDragToEdgeChange: ((Bool) -> Void)?
     var onHotkeyChange: ((UInt32, UInt32) -> Void)?
     var onHistoryLimitChange: ((Int) -> Void)?
+    var onLiveHeightChange: ((CGFloat) -> Void)?
 }
 
 /// Manages the dropdown panel window: creation, show/hide animation,
@@ -51,14 +52,10 @@ final class WindowManager {
 
     private func setupWindow() {
         let screen = NSScreen.main ?? NSScreen.screens.first!
-        let width = settings.panelOrder.reduce(into: CGFloat(0)) { acc, p in
-            acc += settings.panelWidths[p] ?? 250
-        }
         let height = settings.windowHeight
-        let x = screen.frame.midX - width / 2
-        let y = screen.frame.maxY
+        let frame = NSRect(x: screen.frame.minX, y: screen.frame.maxY, width: screen.frame.width, height: height)
 
-        let panel = DropDownPanel(contentRect: NSRect(x: x, y: y, width: width, height: height))
+        let panel = DropDownPanel(contentRect: frame)
         panel.alphaValue = 0
 
         let content = MainContentView()
@@ -71,7 +68,6 @@ final class WindowManager {
 
         let controller = NSHostingController(rootView: content)
         panel.contentViewController = controller
-        panel.setContentSize(NSSize(width: width, height: height))
 
         self.panel = panel
     }
@@ -120,40 +116,19 @@ final class WindowManager {
 
         animationTimer?.invalidate()
         animationTimer = nil
-        isAnimating = true
         uiState.isWindowVisible = true
         edgeTracker.windowDidShow(source: source)
 
         let height = settings.windowHeight
         let targetFrame = dropdownPanelFrame(screenFrame: screen.frame, height: height)
-        let targetY = targetFrame.minY
-        let startY = screen.frame.maxY
-        let x = screen.frame.minX
         let alpha = CGFloat(settings.windowOpacity)
 
-        // Start: above screen, full alpha immediately (no fade — clean slide)
-        panel.setFrame(NSRect(x: x, y: startY, width: targetFrame.width, height: height), display: false)
+        // Start fully above the screen; slide down with a gentle ease-in-out.
+        panel.setFrame(targetFrame.offsetBy(dx: 0, dy: height), display: false)
         panel.alphaValue = alpha
         panel.orderFrontRegardless()
 
-        // Slide-down: smooth, gradual ease-out.
-        let steps = 60
-        let dt = 1.0 / Double(steps)
-        var step = 0
-        animationTimer = Timer.scheduledTimer(withTimeInterval: dt, repeats: true) { [weak self] timer in
-            guard let self = self, let panel = self.panel else { timer.invalidate(); return }
-            step += 1
-            let p = CGFloat(step) / CGFloat(steps)
-            let eased = 1.0 - pow(1.0 - p, 3)
-            let y = startY + (targetY - startY) * eased
-            panel.setFrame(NSRect(x: x, y: y, width: targetFrame.width, height: height), display: true)
-            if step >= steps {
-                timer.invalidate()
-                self.animationTimer = nil
-                self.isAnimating = false
-            }
-        }
-        RunLoop.main.add(animationTimer!, forMode: .common)
+        animate(duration: 1.4, from: targetFrame.offsetBy(dx: 0, dy: height), to: targetFrame) { }
     }
 
     func hide() {
@@ -162,32 +137,53 @@ final class WindowManager {
 
         animationTimer?.invalidate()
         animationTimer = nil
-        isAnimating = true
         uiState.isWindowVisible = false
         edgeTracker.windowDidHide()
 
-        let sf = panel.frame
-        let endY = screen.frame.maxY
+        let startFrame = panel.frame
+        let endFrame = startFrame.offsetBy(dx: 0, dy: screen.frame.maxY - startFrame.minY)
+        animate(duration: 1.1, from: startFrame, to: endFrame) { [weak self] in
+            self?.panel?.orderOut(nil)
+        }
+    }
 
-        // Slide-up: smooth, noticeably slower ease-in.
-        let steps = 50
-        let dt = 0.65 / Double(steps)
-        var step = 0
-        animationTimer = Timer.scheduledTimer(withTimeInterval: dt, repeats: true) { [weak self] timer in
+    /// Time-based slide animation (60 Hz) with an ease-in-out curve, so motion
+    /// starts and ends gently regardless of timer jitter.
+    private func animate(duration: TimeInterval, from startFrame: NSRect, to endFrame: NSRect, completion: @escaping () -> Void) {
+        isAnimating = true
+        let start = Date()
+        let timer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] timer in
             guard let self = self, let panel = self.panel else { timer.invalidate(); return }
-            step += 1
-            let p = CGFloat(step) / CGFloat(steps)
-            let eased = pow(p, 3)
-            let y = sf.minY + (endY - sf.minY) * eased
-            panel.setFrame(NSRect(x: sf.minX, y: y, width: sf.width, height: sf.height), display: true)
-            if step >= steps {
+            let p = CGFloat(min(1, Date().timeIntervalSince(start) / duration))
+            let eased = Self.easeInOutCubic(p)
+            let frame = NSRect(
+                x: startFrame.minX + (endFrame.minX - startFrame.minX) * eased,
+                y: startFrame.minY + (endFrame.minY - startFrame.minY) * eased,
+                width: startFrame.width,
+                height: startFrame.height
+            )
+            panel.setFrame(frame, display: true)
+            if p >= 1 {
                 timer.invalidate()
                 self.animationTimer = nil
-                panel.orderOut(nil)
                 self.isAnimating = false
+                completion()
             }
         }
-        RunLoop.main.add(animationTimer!, forMode: .common)
+        animationTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    static func easeInOutCubic(_ p: CGFloat) -> CGFloat {
+        p < 0.5 ? 4 * p * p * p : 1 - pow(-2 * p + 2, 3) / 2
+    }
+
+    /// Live-resize the panel height while anchored to the top of the screen.
+    /// Called by the bottom drag handle; persisted by the view on gesture end.
+    func resizeHeight(to height: CGFloat) {
+        guard uiState.isWindowVisible, !isAnimating, let panel = panel else { return }
+        let screen = panel.screen ?? screenWithMouse() ?? NSScreen.main ?? NSScreen.screens.first!
+        panel.setFrame(dropdownPanelFrame(screenFrame: screen.frame, height: height), display: true)
     }
 
     // MARK: - Screen helpers
