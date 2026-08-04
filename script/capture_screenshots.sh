@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Capture usage screenshots for DropShelf docs.
+# Capture usage screenshots for OverShelf docs.
 #
 # Prereqs:
 #   - macOS 14+, Xcode Command Line Tools
 #   - Screen Recording permission granted to the terminal you run this in
 #     (System Settings > Privacy & Security > Screen Recording)
-#   - Accessibility permission granted to DropShelf (for hotkey/edge tracking)
+#   - Accessibility permission granted to OverShelf (for hotkey/edge tracking)
 #
 # Usage:
 #   ./script/capture_screenshots.sh          # build + launch + capture all
@@ -13,7 +13,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-APP_BUNDLE="$ROOT_DIR/dist/DropShelf.app"
+APP_BUNDLE="$ROOT_DIR/dist/OverShelf.app"
 OUT_DIR="$ROOT_DIR/docs/screenshots"
 DO_BUILD=1
 
@@ -22,7 +22,7 @@ DO_BUILD=1
 mkdir -p "$OUT_DIR"
 
 if [[ $DO_BUILD -eq 1 ]]; then
-  echo "Building DropShelf..."
+  echo "Building OverShelf..."
   "$ROOT_DIR/script/build_and_run.sh" build
 fi
 
@@ -32,19 +32,19 @@ if [[ ! -d "$APP_BUNDLE" ]]; then
 fi
 
 # Quit any running instance, then launch fresh.
-pkill -x DropShelf 2>/dev/null || true
+pkill -x OverShelf 2>/dev/null || true
 sleep 1
 open -n "$APP_BUNDLE"
-echo "Waiting for DropShelf to start..."
+echo "Waiting for OverShelf to start..."
 sleep 3
 
 toggle_panel() {
   osascript <<'OSA'
 tell application "System Events"
-  tell process "DropShelf"
+  tell process "OverShelf"
     click menu bar item 1 of menu bar 2
     delay 0.4
-    click menu item "Show/Hide DropShelf" of menu 1 of menu bar item 1 of menu bar 2
+    click menu item "Show/Hide OverShelf" of menu 1 of menu bar item 1 of menu bar 2
   end tell
 end tell
 OSA
@@ -66,10 +66,10 @@ capture_top() {
 hide_panel() {
   osascript <<'OSA' 2>/dev/null || true
 tell application "System Events"
-  tell process "DropShelf"
+  tell process "OverShelf"
     click menu bar item 1 of menu bar 2
     delay 0.3
-    click menu item "Show/Hide DropShelf" of menu 1 of menu bar item 1 of menu bar 2
+    click menu item "Show/Hide OverShelf" of menu 1 of menu bar item 1 of menu bar 2
   end tell
 end tell
 OSA
@@ -85,7 +85,7 @@ hide_panel
 echo "Capturing: menu bar"
 osascript <<'OSA'
 tell application "System Events"
-  tell process "DropShelf"
+  tell process "OverShelf"
     click menu bar item 1 of menu bar 2
   end tell
 end tell
@@ -98,7 +98,7 @@ sleep 1
 echo "Capturing: settings (Preferences)"
 osascript <<'OSA'
 tell application "System Events"
-  tell process "DropShelf"
+  tell process "OverShelf"
     click menu bar item 1 of menu bar 2
     delay 0.4
     click menu item "Preferences…" of menu 1 of menu bar item 1 of menu bar 2
@@ -127,7 +127,7 @@ capture_top "$OUT_DIR/panel-notes.png"
 hide_panel
 
 # Done. Leave the app running or quit it.
-pkill -x DropShelf 2>/dev/null || true
+pkill -x OverShelf 2>/dev/null || true
 
 echo ""
 echo "Screenshots written to $OUT_DIR:"

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Shared visual constants for the DropShelf UI.
+/// Shared visual constants for the OverShelf UI.
 enum Theme {
     static let panelBg = Color.clear // content uses .ultraThinMaterial
     static let sidebarBg = Color(nsColor: .controlBackgroundColor).opacity(0.5)

@@ -8,7 +8,7 @@ func fail(_ message: String) -> Never {
 }
 
 let tempDir = FileManager.default.temporaryDirectory
-    .appendingPathComponent("dropshelf-services-test-\(UUID().uuidString)")
+    .appendingPathComponent("overshelf-services-test-\(UUID().uuidString)")
 try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
 
 let persistence = PersistenceManager(baseURL: tempDir)

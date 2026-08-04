@@ -1,6 +1,6 @@
-name: DropShelf
+name: OverShelf
 options:
-  bundleIdPrefix: com.dropshelf
+  bundleIdPrefix: com.overshelf
   deploymentTarget:
     macOS: "14.0"
   developmentLanguage: en
@@ -15,15 +15,15 @@ settings:
     CODE_SIGNING_ALLOWED: "NO"
     DEVELOPMENT_TEAM: ""
 targets:
-  DropShelf:
+  OverShelf:
     type: application
     platform: macOS
     sources:
-      - path: DropShelf
+      - path: OverShelf
     info:
-      path: DropShelf/Info.plist
+      path: OverShelf/Info.plist
       properties:
-        CFBundleDisplayName: DropShelf
+        CFBundleDisplayName: OverShelf
         CFBundleShortVersionString: "1.0"
         CFBundleVersion: "1"
         LSMinimumSystemVersion: "14.0"
@@ -34,9 +34,9 @@ targets:
         NSSupportsSuddenTermination: false
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.dropshelf.app
-        PRODUCT_NAME: DropShelf
+        PRODUCT_BUNDLE_IDENTIFIER: com.overshelf.app
+        PRODUCT_NAME: OverShelf
         GENERATE_INFOPLIST_FILE: false
-        INFOPLIST_FILE: DropShelf/Info.plist
+        INFOPLIST_FILE: OverShelf/Info.plist
         COMBINE_HIDPI_IMAGES: true
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"

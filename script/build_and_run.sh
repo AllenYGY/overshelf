@@ -2,8 +2,8 @@
 set -euo pipefail
 
 MODE="${1:-run}"
-APP_NAME="DropShelf"
-BUNDLE_ID="com.dropshelf.app"
+APP_NAME="OverShelf"
+BUNDLE_ID="com.overshelf.app"
 MIN_SYSTEM_VERSION="14.0"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -78,12 +78,12 @@ build_app() {
     -framework WebKit \
    -O \
    -o "$DIST_DIR/$APP_NAME" \
-    DropShelf/App/*.swift \
-    DropShelf/Models/*.swift \
-    DropShelf/Services/*.swift \
-    DropShelf/Views/*.swift \
-    DropShelf/Views/Shared/*.swift \
-    DropShelf/Window/*.swift
+    OverShelf/App/*.swift \
+    OverShelf/Models/*.swift \
+    OverShelf/Services/*.swift \
+    OverShelf/Views/*.swift \
+    OverShelf/Views/Shared/*.swift \
+    OverShelf/Window/*.swift
 }
 
 stage_bundle() {
@@ -98,8 +98,8 @@ stage_bundle() {
   mkdir -p "$STAGE_MACOS" "$STAGE_RESOURCES"
   cp "$DIST_DIR/$APP_NAME" "$STAGE_MACOS/$APP_NAME"
   chmod +x "$STAGE_MACOS/$APP_NAME"
-  cp "$ROOT_DIR/DropShelf/Resources/AppIcon.icns" "$STAGE_RESOURCES/" 2>/dev/null || true
-  cp -R "$ROOT_DIR/DropShelf/Resources/Markdown" "$STAGE_RESOURCES/" 2>/dev/null || true
+  cp "$ROOT_DIR/OverShelf/Resources/AppIcon.icns" "$STAGE_RESOURCES/" 2>/dev/null || true
+  cp -R "$ROOT_DIR/OverShelf/Resources/Markdown" "$STAGE_RESOURCES/" 2>/dev/null || true
 
   # Copy Info.plist from source, expanding build variables
   sed \
@@ -107,7 +107,7 @@ stage_bundle() {
     -e 's/$(PRODUCT_NAME)/'"$APP_NAME"'/g' \
     -e 's/$(PRODUCT_BUNDLE_IDENTIFIER)/'"$BUNDLE_ID"'/g' \
     -e 's/$(DEVELOPMENT_LANGUAGE)/en/g' \
-    "$ROOT_DIR/DropShelf/Info.plist" > "$STAGE_CONTENTS/Info.plist"
+    "$ROOT_DIR/OverShelf/Info.plist" > "$STAGE_CONTENTS/Info.plist"
 
   printf 'APPL????' > "$STAGE_CONTENTS/PkgInfo"
 
@@ -153,7 +153,7 @@ case "$MODE" in
     stage_bundle
     open_app
     sleep 2
-    /usr/bin/log stream --info --style compact --predicate 'process == "DropShelf"'
+    /usr/bin/log stream --info --style compact --predicate 'process == "OverShelf"'
     ;;
   --telemetry|telemetry)
     build_app
@@ -190,8 +190,8 @@ case "$MODE" in
       -framework SwiftUI \
       -framework Carbon \
       -framework WebKit \
-      DropShelf/Models/AppSettings.swift \
-      DropShelf/Services/PersistenceManager.swift \
+      OverShelf/Models/AppSettings.swift \
+      OverShelf/Services/PersistenceManager.swift \
       Tests/MigrationTests/main.swift
     "$DIST_DIR/MigrationTests"
     echo "Running app services test..."
@@ -206,16 +206,16 @@ case "$MODE" in
       -framework SwiftUI \
       -framework Carbon \
       -framework WebKit \
-      DropShelf/Models/AppSettings.swift \
-      DropShelf/Models/ClipboardItem.swift \
-      DropShelf/Models/Note.swift \
-      DropShelf/Models/StagedFile.swift \
-      DropShelf/Models/TodoItem.swift \
-      DropShelf/Services/PersistenceManager.swift \
-      DropShelf/Services/NotesManager.swift \
-      DropShelf/Services/TodoManager.swift \
-      DropShelf/Services/FileStagingManager.swift \
-      DropShelf/Services/ClipboardMonitor.swift \
+      OverShelf/Models/AppSettings.swift \
+      OverShelf/Models/ClipboardItem.swift \
+      OverShelf/Models/Note.swift \
+      OverShelf/Models/StagedFile.swift \
+      OverShelf/Models/TodoItem.swift \
+      OverShelf/Services/PersistenceManager.swift \
+      OverShelf/Services/NotesManager.swift \
+      OverShelf/Services/TodoManager.swift \
+      OverShelf/Services/FileStagingManager.swift \
+      OverShelf/Services/ClipboardMonitor.swift \
       Tests/AppServicesTests/main.swift
     "$DIST_DIR/AppServicesTests"
     echo "Running top edge tracker test..."
@@ -228,7 +228,7 @@ case "$MODE" in
       -swift-version 5 \
       -framework Cocoa \
       -framework SwiftUI \
-      DropShelf/Window/TopEdgeTracker.swift \
+      OverShelf/Window/TopEdgeTracker.swift \
       Tests/TopEdgeTrackerTests/main.swift
     "$DIST_DIR/TopEdgeTrackerTests"
     echo "Running panel frame test..."
@@ -240,7 +240,7 @@ case "$MODE" in
       -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE" \
       -swift-version 5 \
       -framework CoreGraphics \
-      DropShelf/Window/PanelFrame.swift \
+      OverShelf/Window/PanelFrame.swift \
       Tests/PanelFrameTests/main.swift
     "$DIST_DIR/PanelFrameTests"
     echo "Running markdown preview test..."

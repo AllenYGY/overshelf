@@ -3,7 +3,7 @@ import Cocoa
 import SwiftUI
 
 let tempDir = FileManager.default.temporaryDirectory
-    .appendingPathComponent("dropshelf-test-\(UUID().uuidString)")
+    .appendingPathComponent("overshelf-test-\(UUID().uuidString)")
 try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
 
 let settingsURL = tempDir.appendingPathComponent("settings.json")

@@ -39,7 +39,7 @@ struct SettingsView: View {
 
             Section("Hotkey") {
                 HStack {
-                    Text("Show/hide DropShelf:")
+                    Text("Show/hide OverShelf:")
                     HotkeyRecorder(keyCode: settings.hotkeyCode, modifiers: settings.hotkeyModifiers) { code, mods in
                         uiState.onHotkeyChange?(code, mods)
                     }
@@ -149,7 +149,7 @@ struct SettingsView: View {
             }
 
             Section("About") {
-                Text("DropShelf replicates the classic Mac dropdown drawer with clipboard history, file staging, and quick notes — all summoned from the top edge.")
+                Text("OverShelf replicates the classic Mac dropdown drawer with clipboard history, file staging, and quick notes — all summoned from the top edge.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

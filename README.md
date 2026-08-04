@@ -1,4 +1,4 @@
-# DropShelf
+# OverShelf
 
 A macOS dropdown-drawer app that puts clipboard history, file staging, quick
 notes, and todos behind one panel that slides down from the top of your screen.
@@ -6,10 +6,10 @@ notes, and todos behind one panel that slides down from the top of your screen.
 Hidden until you need it, gone the instant you're done. No Dock icon, no
 desktop clutter. Built with Swift and SwiftUI.
 
-> DropShelf is an original app inspired by the classic "dropdown drawer"
+> OverShelf is an original app inspired by the classic "dropdown drawer"
 > interaction pattern. It is not affiliated with any existing product.
 
-![DropShelf panel](docs/screenshots/App.png)
+![OverShelf panel](./docs/screenshots/App.png)
 
 ---
 
@@ -53,19 +53,19 @@ click outside, toggle the hotkey, or pick a menu action.
 
 Click the menu bar icon (stack icon) for:
 
-- **Show/Hide DropShelf** (`Cmd + Shift + C`)
+- **Show/Hide OverShelf** (`Cmd + Shift + C`)
 - **New Note** / **New Todo** - create and reveal the panel
 - **Clear Clipboard History**
 - **Panels** - show/hide individual panels
 - **Preferences...** (`Cmd + ,`)
-- **Quit DropShelf** (`Cmd + Q`)
+- **Quit OverShelf** (`Cmd + Q`)
 
 ### Data and privacy
 
 Everything is stored locally as JSON in:
 
 ```
-~/Library/Application Support/DropShelf/
+~/Library/Application Support/OverShelf/
 ```
 
 No cloud sync, no telemetry, no network calls. Your data never leaves your Mac.
@@ -100,7 +100,7 @@ signing, and launch.
 ./script/build_and_run.sh verify
 ```
 
-The built app lands at `dist/DropShelf.app`.
+The built app lands at `dist/OverShelf.app`.
 
 First launch notes:
 
@@ -108,13 +108,13 @@ First launch notes:
   right-click > **Open** (or **System Settings > Privacy & Security > Open
   Anyway**) to allow it.
 - For the global hotkey and edge tracking to work, grant **Accessibility**
-  permission to DropShelf in **System Settings > Privacy & Security**.
+  permission to OverShelf in **System Settings > Privacy & Security**.
 
 ---
 
 ## Usage
 
-1. Launch DropShelf. It lives in the menu bar; no Dock icon appears.
+1. Launch OverShelf. It lives in the menu bar; no Dock icon appears.
 2. Press `Cmd + Shift + C` (or hold `Cmd` and move the mouse to the top edge)
    to slide the panel down.
 3. Copy things, shelve files, jot notes, track tasks.
@@ -131,7 +131,7 @@ localized guide.
 > **Screen Recording** permission to the terminal. Run it once you've built the
 > app; it drops PNGs into `docs/screenshots/`.
 
-![DropShelf panel](docs/screenshots/App.png)
+![OverShelf panel](./docs/screenshots/App.png)
 
 > The panel slides down from the top of the screen, full width, with
 > Clipboard, Files, Notes, and Todo side by side. Capture more views
@@ -143,7 +143,7 @@ localized guide.
 ## Project layout
 
 ```
-DropShelf/
+OverShelf/
   App/            # App entry, AppDelegate, status bar menu
   Models/         # AppSettings, ClipboardItem, Note, StagedFile, TodoItem
   Services/       # PersistenceManager, ClipboardMonitor, NotesManager, ...
@@ -152,20 +152,20 @@ DropShelf/
   Resources/      # AppIcon, bundled Markdown libs (markdown-it, KaTeX, DOMPurify)
 Tests/            # Migration, services, edge tracker, panel frame, markdown
 script/           # build_and_run.sh, capture_screenshots.sh
-dist/             # built DropShelf.app (gitignored)
+dist/             # built OverShelf.app (gitignored)
 ```
 
 ---
 
 ## Install via Homebrew (planned)
 
-DropShelf can be distributed as a Homebrew Cask once a GitHub release is
+OverShelf can be distributed as a Homebrew Cask once a GitHub release is
 published. See [docs/homebrew.md](docs/homebrew.md) for the full tap and
 formula setup. In short, after a tagged release:
 
 ```bash
 brew tap ALLENYGY/tap
-brew install --cask dropshelf
+brew install --cask overshelf
 ```
 
 ---
@@ -176,7 +176,7 @@ brew install --cask dropshelf
   and `Settings` scenes.
 - **WebKit** powers the Markdown preview. The renderer (`markdown-it`), math
   (`KaTeX`), and sanitizer (`DOMPurify`) are bundled offline in
-  `DropShelf/Resources/Markdown/` - no network, no CDNs.
+  `OverShelf/Resources/Markdown/` - no network, no CDNs.
 - **No third-party Swift packages.** Everything is stdlib + system frameworks.
 - Custom top-edge mouse tracking (`TopEdgeTracker`) and a timer-driven slide
   animation in `WindowManager` give the dropdown feel without private APIs.
@@ -186,12 +186,12 @@ brew install --cask dropshelf
 ## License
 
 MIT. See [LICENSE](LICENSE). Bundled JavaScript libraries in
-`DropShelf/Resources/Markdown/` carry their own licenses; see
-`DropShelf/Resources/Markdown/THIRD_PARTY_NOTICES.md`.
+`OverShelf/Resources/Markdown/` carry their own licenses; see
+`OverShelf/Resources/Markdown/THIRD_PARTY_NOTICES.md`.
 
 ---
 
 ## Acknowledgements
 
 Inspired by the dropdown-drawer interaction pattern popularized by apps like
-Unclutter. DropShelf is an independent implementation written from scratch.
+Unclutter. OverShelf is an independent implementation written from scratch.

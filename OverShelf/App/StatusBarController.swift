@@ -10,13 +10,13 @@ final class StatusBarController {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.image = NSImage(
             systemSymbolName: "rectangle.stack.badge.plus",
-            accessibilityDescription: "DropShelf"
+            accessibilityDescription: "OverShelf"
         )
         statusItem.button?.image?.isTemplate = true
 
         let menu = NSMenu()
 
-        let showItem = NSMenuItem(title: "Show/Hide DropShelf", action: #selector(toggleWindow), keyEquivalent: "")
+        let showItem = NSMenuItem(title: "Show/Hide OverShelf", action: #selector(toggleWindow), keyEquivalent: "")
         showItem.target = self
         menu.addItem(showItem)
 
@@ -28,7 +28,7 @@ final class StatusBarController {
 
         menu.addItem(.separator())
 
-        let quitItem = NSMenuItem(title: "Quit DropShelf", action: #selector(quit), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: "Quit OverShelf", action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
 

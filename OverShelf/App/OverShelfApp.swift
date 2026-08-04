@@ -1,12 +1,12 @@
 import SwiftUI
 
 @main
-struct DropShelfApp: App {
+struct OverShelfApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
         // Status bar icon + menu using native MenuBarExtra
-        MenuBarExtra("DropShelf", systemImage: "rectangle.stack.badge.plus") {
+        MenuBarExtra("OverShelf", systemImage: "rectangle.stack.badge.plus") {
             StatusBarMenu(appDelegate: appDelegate)
         }
 
@@ -19,7 +19,7 @@ struct DropShelfApp: App {
                 .environment(appDelegate.windowManager.uiState)
         }
         .commands {
-            CommandMenu("DropShelf") {
+            CommandMenu("OverShelf") {
                 Button("Toggle Window") { appDelegate.windowManager.toggle() }
                     .keyboardShortcut("c", modifiers: [.command, .shift])
                 Divider()
@@ -35,7 +35,7 @@ private struct StatusBarMenu: View {
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
-        Button("Show/Hide DropShelf") { appDelegate.windowManager.toggle() }
+        Button("Show/Hide OverShelf") { appDelegate.windowManager.toggle() }
             .keyboardShortcut("c", modifiers: [.command, .shift])
         Divider()
 
@@ -83,7 +83,7 @@ private struct StatusBarMenu: View {
 
         Divider()
 
-        Button("Quit DropShelf") { NSApp.terminate(nil) }
+        Button("Quit OverShelf") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
     }
 }

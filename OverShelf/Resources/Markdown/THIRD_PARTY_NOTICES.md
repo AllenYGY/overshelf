@@ -1,4 +1,4 @@
-DropShelf includes vendored JavaScript assets for Markdown rendering.
+OverShelf includes vendored JavaScript assets for Markdown rendering.
 
 markdown-it v14.1.0
 Copyright (c) 2014 Vitaly Puzrin.

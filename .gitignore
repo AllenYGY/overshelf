@@ -7,7 +7,7 @@
 
 # Build output
 dist/
-DropShelf.app/
+OverShelf.app/
 build/
 *.o
 *.dSYM
@@ -22,3 +22,4 @@ DerivedData/
 
 # Local screenshots (regenerate with script/capture_screenshots.sh)
 docs/screenshots/*.png
+homebrew-tap

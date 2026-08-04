@@ -11,7 +11,7 @@ final class PersistenceManager {
         } else {
             let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
                 ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
-            appSupportURL = base.appendingPathComponent("DropShelf", isDirectory: true)
+            appSupportURL = base.appendingPathComponent("OverShelf", isDirectory: true)
         }
         try? fileManager.createDirectory(at: appSupportURL, withIntermediateDirectories: true)
     }
