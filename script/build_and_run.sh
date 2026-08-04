@@ -98,7 +98,9 @@ stage_bundle() {
   mkdir -p "$STAGE_MACOS" "$STAGE_RESOURCES"
   cp "$DIST_DIR/$APP_NAME" "$STAGE_MACOS/$APP_NAME"
   chmod +x "$STAGE_MACOS/$APP_NAME"
-  cp "$ROOT_DIR/OverShelf/Resources/AppIcon.icns" "$STAGE_RESOURCES/" 2>/dev/null || true
+  cp "$ROOT_DIR/OverShelf/Resources/AppIcon.icns" "$STAGE_RESOURCES/" || { echo "ERROR: AppIcon.icns copy failed" >&2; exit 1; }
+  # Guard against the silent 0-byte icon failure mode.
+  [ -s "$STAGE_RESOURCES/AppIcon.icns" ] || { echo "ERROR: AppIcon.icns is empty after copy" >&2; exit 1; }
   cp -R "$ROOT_DIR/OverShelf/Resources/Markdown" "$STAGE_RESOURCES/" 2>/dev/null || true
 
   # Copy Info.plist from source, expanding build variables
