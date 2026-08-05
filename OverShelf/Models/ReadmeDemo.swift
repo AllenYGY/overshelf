@@ -7,12 +7,32 @@ enum ReadmeDemoScene: String, CaseIterable {
     case todo
     case overview
 
-    static func parse(arguments: [String]) -> ReadmeDemoScene? {
+}
+
+enum ReadmeDemoLaunchMode: Equatable {
+    case normal
+    case scene(ReadmeDemoScene)
+    case invalidScene
+
+    static func parse(arguments: [String]) -> ReadmeDemoLaunchMode {
         let prefix = "--readme-demo-scene="
         guard let argument = arguments.first(where: { $0.hasPrefix(prefix) }) else {
-            return nil
+            return .normal
         }
-        return ReadmeDemoScene(rawValue: String(argument.dropFirst(prefix.count)))
+        guard let scene = ReadmeDemoScene(rawValue: String(argument.dropFirst(prefix.count))) else {
+            return .invalidScene
+        }
+        return .scene(scene)
+    }
+
+    var isDemo: Bool {
+        if case .normal = self { return false }
+        return true
+    }
+
+    var scene: ReadmeDemoScene? {
+        guard case let .scene(scene) = self else { return nil }
+        return scene
     }
 }
 

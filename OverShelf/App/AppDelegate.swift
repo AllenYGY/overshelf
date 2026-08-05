@@ -10,22 +10,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let settings: AppSettings
     let todos: TodoManager
     let windowManager: WindowManager
-    private let readmeDemoScene: ReadmeDemoScene?
+    private let readmeDemoLaunchMode: ReadmeDemoLaunchMode
     private let settingsWindowController = SettingsWindowController()
     private var settingsMonitor: Any?
 
     override init() {
-        let readmeDemoScene = ReadmeDemoScene.parse(arguments: CommandLine.arguments)
-        self.readmeDemoScene = readmeDemoScene
+        let readmeDemoLaunchMode = ReadmeDemoLaunchMode.parse(arguments: CommandLine.arguments)
+        self.readmeDemoLaunchMode = readmeDemoLaunchMode
 
-        if readmeDemoScene != nil || Self.readmeDemoProgress != nil {
+        if readmeDemoLaunchMode.isDemo || Self.readmeDemoProgress != nil {
             let demoURL = FileManager.default.temporaryDirectory
                 .appendingPathComponent("OverShelf-ReadmeDemo", isDirectory: true)
             self.persistence = PersistenceManager(baseURL: demoURL)
         } else {
             self.persistence = PersistenceManager()
         }
-        if let readmeDemoScene {
+        if let readmeDemoScene = readmeDemoLaunchMode.scene {
             ReadmeDemoData.seed(scene: readmeDemoScene, into: persistence)
         }
         self.clipboard = ClipboardMonitor(persistence: persistence)
@@ -60,7 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         showReadmeDemoFrameIfRequested()
 
         // Start clipboard monitoring
-        if readmeDemoScene == nil && Self.readmeDemoProgress == nil {
+        if !readmeDemoLaunchMode.isDemo && Self.readmeDemoProgress == nil {
             clipboard.start()
         }
 
