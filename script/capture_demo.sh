@@ -34,13 +34,17 @@ pkill -x OverShelf >/dev/null 2>&1 || true
 BACKDROP_PID=$!
 sleep 0.5
 
-capture_progress() {
-  local progress="$1"
-  local name="$2"
+capture_frame() {
+  local scene="$1"
+  local progress="$2"
+  local name="$3"
   pkill -x OverShelf >/dev/null 2>&1 || true
-  open -n "$APP_BUNDLE" --args "--readme-demo-frame=$progress"
+  open -n "$APP_BUNDLE" --args \
+    "--readme-demo-scene=$scene" \
+    "--readme-demo-frame=$progress"
   sleep 0.7
   screencapture -x "$UNIQUE_DIR/$name.png"
+  validate_capture "$UNIQUE_DIR/$name.png"
 }
 
 validate_capture() {
@@ -57,22 +61,61 @@ validate_capture() {
   fi
 }
 
-echo "Capturing real reveal frames..."
-capture_progress 0 hidden
-validate_capture "$UNIQUE_DIR/hidden.png"
-capture_progress 0.05 open-01
-capture_progress 0.15 open-02
-capture_progress 0.30 open-03
-capture_progress 0.50 open-04
-capture_progress 0.70 open-05
-capture_progress 0.85 open-06
-capture_progress 0.95 open-07
-capture_progress 1 open-08
-capture_progress 0.90 close-01
-capture_progress 0.70 close-02
-capture_progress 0.45 close-03
-capture_progress 0.20 close-04
-capture_progress 0.05 close-05
+echo "Capturing clean full-progress scene frames..."
+capture_frame clipboard 1 focus-clipboard
+capture_frame files 1 focus-files
+capture_frame notes 1 focus-notes
+capture_frame todo 1 focus-todo
+capture_frame overview 1 overview-full
+
+# Normalize clean app captures to one canvas. Focus frames use a fixed
+# quarter-width crop before fitting into the same neutral-padded output.
+CANVAS_WIDTH=1100
+CANVAS_HEIGHT=520
+PANEL_TOP='trunc(ih*0.027)'
+PANEL_HEIGHT='trunc(ih*0.47/2)*2'
+normalize_frame() {
+  local source="$1"
+  local kind="$2"
+  local output="$3"
+  local crop_x='0'
+  if [[ "$kind" == focus-* ]]; then
+    case "$kind" in
+      focus-clipboard) crop_x='0' ;;
+      focus-files) crop_x='iw/4' ;;
+      focus-notes) crop_x='iw/2' ;;
+      focus-todo) crop_x='3*iw/4' ;;
+    esac
+    ffmpeg -hide_banner -loglevel error -y -i "$source" \
+      -vf "crop=iw/4:$PANEL_HEIGHT:$crop_x:$PANEL_TOP,scale=$CANVAS_WIDTH:$CANVAS_HEIGHT:force_original_aspect_ratio=decrease:flags=lanczos,pad=$CANVAS_WIDTH:$CANVAS_HEIGHT:(ow-iw)/2:(oh-ih)/2:color=0x131518,format=rgb24" \
+      "$output"
+  else
+    ffmpeg -hide_banner -loglevel error -y -i "$source" \
+      -vf "crop=iw:$PANEL_HEIGHT:0:$PANEL_TOP,scale=$CANVAS_WIDTH:$CANVAS_HEIGHT:force_original_aspect_ratio=decrease:flags=lanczos,pad=$CANVAS_WIDTH:$CANVAS_HEIGHT:(ow-iw)/2:(oh-ih)/2:color=0x131518,format=rgb24" \
+      "$output"
+  fi
+}
+
+generate_neutral_frame() {
+  local output="$1"
+  ffmpeg -hide_banner -loglevel error -y \
+    -f lavfi -i "color=c=0x131518:s=${CANVAS_WIDTH}x${CANVAS_HEIGHT}" \
+    -frames:v 1 "$output"
+}
+
+generate_reveal_frame() {
+  local progress="$1"
+  local output="$2"
+  local reveal_height
+  reveal_height="$(awk -v height="$CANVAS_HEIGHT" -v progress="$progress" \
+    'BEGIN { print int(height * progress / 2) * 2 }')"
+  ffmpeg -hide_banner -loglevel error -y \
+    -f lavfi -i "color=c=0x131518:s=${CANVAS_WIDTH}x${CANVAS_HEIGHT}" \
+    -i "$UNIQUE_DIR/normalized-overview-full.png" \
+    -filter_complex \
+    "[1:v]crop=$CANVAS_WIDTH:$reveal_height:0:0[reveal];[0:v][reveal]overlay=0:0,format=rgb24" \
+    -frames:v 1 "$output"
+}
 
 FRAME_INDEX=0
 append_frame() {
@@ -86,17 +129,48 @@ append_frame() {
   done
 }
 
-append_frame "$UNIQUE_DIR/hidden.png" 12
-for name in open-{01..08}; do append_frame "$UNIQUE_DIR/$name.png" 1; done
-append_frame "$UNIQUE_DIR/open-08.png" 30
-for name in close-{01..05}; do append_frame "$UNIQUE_DIR/$name.png" 1; done
-append_frame "$UNIQUE_DIR/hidden.png" 15
+for spec in \
+  'focus-clipboard focus-clipboard' \
+  'focus-files focus-files' 'focus-notes focus-notes' 'focus-todo focus-todo' \
+  'overview-full overview'; do
+  read -r name kind <<< "$spec"
+  normalize_frame "$UNIQUE_DIR/$name.png" "$kind" "$UNIQUE_DIR/normalized-$name.png"
+done
 
-echo "Encoding README GIF..."
+# Hidden and partial reveal frames contain no screen pixels. They are rendered
+# from the fixed neutral canvas and the validated full overview capture only.
+generate_neutral_frame "$UNIQUE_DIR/normalized-hidden.png"
+generate_reveal_frame 0.15 "$UNIQUE_DIR/normalized-open-15.png"
+generate_reveal_frame 0.45 "$UNIQUE_DIR/normalized-open-45.png"
+generate_reveal_frame 0.75 "$UNIQUE_DIR/normalized-open-75.png"
+cp "$UNIQUE_DIR/normalized-overview-full.png" "$UNIQUE_DIR/normalized-open-full.png"
+generate_reveal_frame 0.75 "$UNIQUE_DIR/normalized-close-75.png"
+generate_reveal_frame 0.40 "$UNIQUE_DIR/normalized-close-40.png"
+generate_reveal_frame 0.10 "$UNIQUE_DIR/normalized-close-10.png"
+
+append_frame "$UNIQUE_DIR/normalized-hidden.png" 12
+for name in open-15 open-45 open-75 open-full; do
+  append_frame "$UNIQUE_DIR/normalized-$name.png" 2
+done
+for name in focus-clipboard focus-files focus-notes focus-todo; do
+  append_frame "$UNIQUE_DIR/normalized-$name.png" 40
+done
+append_frame "$UNIQUE_DIR/normalized-overview-full.png" 48
+for name in close-75 close-40 close-10; do
+  append_frame "$UNIQUE_DIR/normalized-$name.png" 2
+done
+append_frame "$UNIQUE_DIR/normalized-hidden.png" 15
+
+ACTUAL_FRAME_COUNT="$(find "$FRAMES_DIR" -type f -name 'frame-*.png' | wc -l | tr -d ' ')"
+if [[ "$ACTUAL_FRAME_COUNT" -ne "$FRAME_INDEX" ]]; then
+  echo "ERROR: assembled $ACTUAL_FRAME_COUNT of $FRAME_INDEX expected frames." >&2
+  exit 1
+fi
+echo "Encoding $FRAME_INDEX README GIF frames..."
 ffmpeg -hide_banner -loglevel error -y \
   -framerate 30 -i "$FRAMES_DIR/frame-%03d.png" \
   -filter_complex \
-  "crop=iw:trunc(ih*0.47/2)*2:0:trunc(ih*0.027),scale='min(1100,iw)':-2:flags=lanczos,split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=sierra2_4a" \
+  "split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=sierra2_4a" \
   -loop 0 "$OUTPUT"
 
 echo "Wrote $OUTPUT ($(du -h "$OUTPUT" | cut -f1))"
