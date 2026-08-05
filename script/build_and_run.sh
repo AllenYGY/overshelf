@@ -220,6 +220,23 @@ case "$MODE" in
       OverShelf/Services/ClipboardMonitor.swift \
       Tests/AppServicesTests/main.swift
     "$DIST_DIR/AppServicesTests"
+    echo "Running README demo test..."
+    compile_test "$DIST_DIR/ReadmeDemoTests" \
+      -target arm64-apple-macosx14.0 \
+      -sdk "$SDK_PATH" \
+      -I "$PATCHED_SWIFT" \
+      -L "$PATCHED_SWIFT" \
+      -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE" \
+      -swift-version 5 \
+      -framework Foundation \
+      OverShelf/Models/ClipboardItem.swift \
+      OverShelf/Models/Note.swift \
+      OverShelf/Models/StagedFile.swift \
+      OverShelf/Models/TodoItem.swift \
+      OverShelf/Models/ReadmeDemo.swift \
+      OverShelf/Services/PersistenceManager.swift \
+      Tests/ReadmeDemoTests/main.swift
+    "$DIST_DIR/ReadmeDemoTests"
     echo "Running top edge tracker test..."
     compile_test "$DIST_DIR/TopEdgeTrackerTests" \
       -target arm64-apple-macosx14.0 \
