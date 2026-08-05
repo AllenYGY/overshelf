@@ -167,7 +167,7 @@ final class WindowManager {
             reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         )
         revealView.usesReveal = animation.usesReveal
-        panel.ignoresMouseEvents = true
+        panel.ignoresMouseEvents = !ReadmeDemoPresentation.demoFramesAreInteractive
 
         guard animation.duration > 0 else {
             finishReveal(at: target)

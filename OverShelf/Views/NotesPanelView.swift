@@ -118,7 +118,7 @@ struct NotesPanelView: View {
     private func configureDemoSceneIfNeeded() {
         guard !didConfigureDemoScene else { return }
         didConfigureDemoScene = true
-        guard uiState.readmeDemoScene == .notes || uiState.readmeDemoScene == .overview,
+        guard ReadmeDemoPresentation.startsNotesPreview(scene: uiState.readmeDemoScene),
               let note = notes.notes.first else { return }
         selectedNoteId = note.id
         noteBody = note.body

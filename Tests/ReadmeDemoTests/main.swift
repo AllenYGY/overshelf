@@ -22,6 +22,14 @@ for scene in ReadmeDemoScene.allCases {
     }
 }
 
+guard ReadmeDemoPresentation.startsNotesPreview(scene: .notes),
+      ReadmeDemoPresentation.startsNotesPreview(scene: .overview),
+      !ReadmeDemoPresentation.startsNotesPreview(scene: .clipboard),
+      !ReadmeDemoPresentation.startsNotesPreview(scene: nil),
+      !ReadmeDemoPresentation.demoFramesAreInteractive else {
+    fail("demo presentation contract did not preserve scene setup or noninteractive frames")
+}
+
 let invalidMode = ReadmeDemoLaunchMode.parse(
     arguments: ["OverShelf", "--readme-demo-scene=notse"]
 )

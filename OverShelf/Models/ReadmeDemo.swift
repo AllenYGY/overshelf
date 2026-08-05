@@ -128,3 +128,12 @@ enum ReadmeDemoData {
         _ = scene
     }
 }
+
+/// Pure presentation rules shared by demo views and window framing.
+enum ReadmeDemoPresentation {
+    static let demoFramesAreInteractive = false
+
+    static func startsNotesPreview(scene: ReadmeDemoScene?) -> Bool {
+        scene == .notes || scene == .overview
+    }
+}
