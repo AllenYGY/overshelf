@@ -52,7 +52,7 @@ cask "overshelf" do
 
   url "https://github.com/ALLENYGY/overshelf/releases/download/v#{version}/OverShelf-#{version}.zip"
   name "OverShelf"
-  desc "macOS dropdown drawer for clipboard history, file staging, notes, and todos"
+  desc "Dropdown drawer for clipboard history, file staging, notes, and todos"
   homepage "https://github.com/ALLENYGY/overshelf"
 
   depends_on macos: :sonoma
