@@ -12,9 +12,7 @@ struct FilesPanelView: View {
         VStack(spacing: 0) {
             PanelHeader(
                 title: "Files",
-                iconName: "tray.full",
-                onDetach: uiState.detachedPanels.contains(.files) ? nil : { detachFiles() },
-                onReattach: uiState.detachedPanels.contains(.files) ? { reattachFiles() } : nil
+                iconName: "tray.full"
             )
 
             if files.stagedFiles.isEmpty {

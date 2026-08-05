@@ -2,8 +2,10 @@ import SwiftUI
 
 /// Shared visual constants for the OverShelf UI.
 enum Theme {
-    static let panelBg = Color.clear // content uses .ultraThinMaterial
-    static let sidebarBg = Color(nsColor: .controlBackgroundColor).opacity(0.5)
+    static let windowBg = Color(nsColor: .windowBackgroundColor)
+    static let panelBg = windowBg
+    static let sidebarBg = Color(nsColor: .controlBackgroundColor)
+    static let fieldBg = Color(nsColor: .unemphasizedSelectedContentBackgroundColor)
     static let rowHover = Color(nsColor: .unemphasizedSelectedContentBackgroundColor)
     static let rowSelected = Color(nsColor: .selectedContentBackgroundColor)
     static let divider = Color(nsColor: .separatorColor)
@@ -18,8 +20,6 @@ enum Theme {
 struct PanelHeader: View {
     let title: String
     let iconName: String
-    var onDetach: (() -> Void)?
-    var onReattach: (() -> Void)?
 
     var body: some View {
         HStack(spacing: 6) {
@@ -30,24 +30,6 @@ struct PanelHeader: View {
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(.primary)
             Spacer()
-            if let onReattach {
-                Button(action: onReattach) {
-                    Image(systemName: "arrow.down.left.square")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .help("Reattach panel")
-            }
-            if let onDetach {
-                Button(action: onDetach) {
-                    Image(systemName: "arrow.up.right.square")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .help("Detach panel")
-            }
         }
         .padding(.horizontal, 10)
         .frame(height: Theme.headerHeight)
@@ -95,7 +77,7 @@ struct PanelDivider: View {
 struct WindowBackground: View {
     var body: some View {
         RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(.ultraThinMaterial)
+            .fill(Theme.windowBg)
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(.quaternary, lineWidth: 0.5)

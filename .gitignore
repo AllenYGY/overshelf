@@ -4,6 +4,7 @@
 
 # Codex / agent local state
 .codex/
+.superpowers/
 
 # Build output
 dist/

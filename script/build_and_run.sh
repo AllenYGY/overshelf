@@ -245,6 +245,18 @@ case "$MODE" in
       OverShelf/Window/PanelFrame.swift \
       Tests/PanelFrameTests/main.swift
     "$DIST_DIR/PanelFrameTests"
+    echo "Running panel reveal animation test..."
+    compile_test "$DIST_DIR/PanelRevealAnimationTests" \
+      -target arm64-apple-macosx14.0 \
+      -sdk "$SDK_PATH" \
+      -I "$PATCHED_SWIFT" \
+      -L "$PATCHED_SWIFT" \
+      -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE" \
+      -swift-version 5 \
+      -framework CoreGraphics \
+      OverShelf/Window/PanelRevealAnimation.swift \
+      Tests/PanelRevealAnimationTests/main.swift
+    "$DIST_DIR/PanelRevealAnimationTests"
     echo "Running markdown preview test..."
     compile_test "$DIST_DIR/MarkdownPreviewTests" \
       -target arm64-apple-macosx14.0 \

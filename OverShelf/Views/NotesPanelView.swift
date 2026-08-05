@@ -19,9 +19,7 @@ struct NotesPanelView: View {
         VStack(spacing: 0) {
             PanelHeader(
                 title: "Notes",
-                iconName: "note.text",
-                onDetach: uiState.detachedPanels.contains(.notes) ? nil : { detachNotes() },
-                onReattach: uiState.detachedPanels.contains(.notes) ? { reattachNotes() } : nil
+                iconName: "note.text"
             )
 
             if let id = selectedNoteId, let note = notes.notes.first(where: { $0.id == id }) {
@@ -57,7 +55,7 @@ struct NotesPanelView: View {
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 5)
-                .background(Color(nsColor: .unemphasizedSelectedContentBackgroundColor).opacity(0.4))
+                .background(Theme.fieldBg)
                 .cornerRadius(6)
 
                 Button {
@@ -141,7 +139,7 @@ struct NotesPanelView: View {
                 }
             }
             .padding(2)
-            .background(Color(nsColor: .unemphasizedSelectedContentBackgroundColor).opacity(0.5))
+            .background(Theme.fieldBg)
             .cornerRadius(6)
 
             Button { notes.togglePin(id: note.id) } label: {

@@ -17,7 +17,7 @@ struct MainContentView: View {
     var body: some View {
         @Bindable var settings = settings
 
-        ZStack {
+        ZStack(alignment: .topTrailing) {
             WindowBackground()
 
             HStack(spacing: 0) {
@@ -33,50 +33,14 @@ struct MainContentView: View {
                                 delta: delta
                             )
                         }
-                    }
-                }
-
-                // Always-visible panel manager so hidden panels can be restored.
-                Menu {
-                    ForEach(settings.panelOrder) { panel in
-                        let detached = uiState.detachedPanels.contains(panel)
-                        let visible = !settings.hiddenPanels.contains(panel)
-                        if detached {
-                            Button {
-                                uiState.onReattachPanel?(panel)
-                            } label: {
-                                Label("Reattach \(panel.title)", systemImage: "arrow.down.left.square")
-                            }
-                        } else {
-                            Button {
-                                var hidden = settings.hiddenPanels
-                                if visible {
-                                    // Keep at least one panel visible.
-                                    if settings.panelOrder.count - settings.hiddenPanels.count > 1 {
-                                        hidden.insert(panel)
-                                    }
-                                } else {
-                                    hidden.remove(panel)
-                                }
-                                settings.hiddenPanels = hidden
-                            } label: {
-                                Label(panel.title, systemImage: visible ? "checkmark" : "minus")
-                            }
                         }
-                    }
-                } label: {
-                    Image(systemName: "square.grid.2x2")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 28, height: 28)
                 }
-                .menuStyle(.borderlessButton)
-                .frame(width: 36)
-                .background(Theme.sidebarBg)
-                .help("Panels")
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            // Keep panel management available without reserving layout width.
+            panelManager(settings: settings)
 
             // Bottom drag handle for live height resize (persisted on release).
             VStack {
@@ -116,6 +80,53 @@ struct MainContentView: View {
                 NotificationCenter.default.post(name: .windowDetach, object: nil, userInfo: ["panel": panel])
             }
         }
+    }
+
+    @ViewBuilder
+    private func panelManager(settings: AppSettings) -> some View {
+        Menu {
+            ForEach(settings.panelOrder) { panel in
+                let detached = uiState.detachedPanels.contains(panel)
+                let visible = !settings.hiddenPanels.contains(panel)
+                if detached {
+                    Button {
+                        uiState.onReattachPanel?(panel)
+                    } label: {
+                        Label("Reattach \(panel.title)", systemImage: "arrow.down.left.square")
+                    }
+                } else {
+                    Button {
+                        var hidden = settings.hiddenPanels
+                        if visible {
+                            if settings.panelOrder.count - settings.hiddenPanels.count > 1 {
+                                hidden.insert(panel)
+                            }
+                        } else {
+                            hidden.remove(panel)
+                        }
+                        settings.hiddenPanels = hidden
+                    } label: {
+                        Label(panel.title, systemImage: visible ? "checkmark" : "minus")
+                    }
+                    if visible {
+                        Button("Detach \(panel.title)") {
+                            uiState.onDetachPanel?(panel)
+                        }
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: "square.grid.2x2")
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+                .frame(width: 28, height: 28)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .background(Theme.sidebarBg)
+        .help("Panels")
+        .padding(.top, 2)
+        .padding(.trailing, 2)
     }
 
     @ViewBuilder

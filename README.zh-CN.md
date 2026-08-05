@@ -1,14 +1,14 @@
 # OverShelf
 
 一个 macOS 上的「下拉抽屉」式效率工具：把剪贴板历史、文件暂存、快速笔记、待办
-事项收进同一个从屏幕顶部滑下的面板里。
+事项收进同一个从屏幕顶部逐步展开的面板里。
 
 平时完全隐藏，需要时一唤即出，用完自动缩回，不占 Dock、不占桌面。使用 Swift 与
 SwiftUI 构建。
 
 > OverShelf 是一款原创应用，借鉴了经典的「下拉抽屉」交互形态，与任何现有产品无关联。
 
-![OverShelf 面板](docs/screenshots/App.png)
+![OverShelf 顶边展开动效](docs/screenshots/overshelf-reveal.gif)
 
 ---
 
@@ -30,16 +30,24 @@ SwiftUI 构建。
 | 触发方式 | 动作 |
 | --- | --- |
 | `Cmd + Shift + C` | 全局快捷键唤出 / 收回面板 |
-| 按住 `Cmd` + 鼠标移到屏幕顶边 | 面板从顶部滑下 |
+| 按住 `Cmd` + 鼠标移到屏幕顶边 | 面板从顶边逐步展开 |
 | 拖文件到屏幕顶边 | 面板自动弹出接住拖拽 |
 
-面板从屏幕顶部滑下展开；点击面板外区域、再按一次快捷键或选择菜单项即可向上收回。
+面板从屏幕顶边向下逐步展开；点击面板外区域、再按一次快捷键或选择菜单项即可收回。
+内容始终保持最终布局尺寸，不再把整个窗口从屏幕外长距离移动进来。
+
+### 自适应外观
+
+- 使用不透明的柔和分层表面，不再使用毛玻璃模糊。
+- 默认跟随 macOS 外观。
+- 可在「偏好设置 > 通用」中选择「系统 / 浅色 / 深色」。
+- 遵循 macOS 的「减少动态效果」辅助功能设置。
 
 ### 面板可自由定制
 
 - 拖动面板之间的分隔条可调整每个面板的宽度。
 - 在「偏好设置 > 面板」中拖拽重排面板顺序。
-- 可把任意面板拖出主窗口，变成独立的悬浮置顶窗口；从悬浮窗关闭按钮或面板头部可重新归位。
+- 可从面板管理菜单把任意面板分离成悬浮置顶窗口；关闭悬浮窗或使用菜单即可重新归位。
 - 可隐藏不常用的面板，在「偏好设置 > 面板」或菜单栏「面板」子菜单中恢复。
 
 ### 菜单栏
@@ -68,8 +76,35 @@ SwiftUI 构建。
 ## 环境要求
 
 - macOS 14.0（Sonoma）或更高版本
-- Xcode 命令行工具（`xcode-select --install`）
-- Apple Silicon（arm64）；Intel 架构未测试
+- Apple Silicon（arm64）；当前发布包不包含 Intel 二进制文件
+- 仅从源码构建时需要 Xcode 命令行工具（`xcode-select --install`）
+
+---
+
+## 通过 Homebrew 安装
+
+正式发布的 Cask 已可从 `ALLENYGY/tap` 安装：
+
+```bash
+brew tap ALLENYGY/tap
+brew install --cask overshelf
+```
+
+后续升级或卸载：
+
+```bash
+brew upgrade --cask overshelf
+brew uninstall --cask overshelf
+```
+
+如需同时删除剪贴板历史、笔记、待办和偏好设置：
+
+```bash
+brew uninstall --cask --zap overshelf
+```
+
+应用目前采用 ad-hoc 签名。首次启动时，macOS 可能要求右键点击
+**OverShelf.app > 打开**，或在「系统设置 > 隐私与安全性」中允许。
 
 ---
 
@@ -98,8 +133,8 @@ SwiftUI 构建。
 
 - 应用为 ad-hoc 签名，首次打开 macOS 可能弹出 Gatekeeper 提示；右键 > **打开**
   （或在「系统设置 > 隐私与安全性 > 仍要打开」中允许）。
-- 全局快捷键与触顶追踪需要 **辅助功能（Accessibility）** 权限，请在
-  「系统设置 > 隐私与安全性」中授权给 OverShelf。
+- 触顶与拖拽追踪可能需要在「系统设置 > 隐私与安全性」中授予
+  **辅助功能** 或 **输入监控** 权限；Carbon 全局快捷键本身不需要辅助功能权限。
 
 ---
 
@@ -110,32 +145,23 @@ SwiftUI 构建。
 3. 复制内容、暂存文件、随手记笔记、跟踪任务。
 4. 点击面板外区域（或再按一次快捷键）收回面板。
 
-截图见下方，英文说明见 [README](README.md)。
+动效演示见下方，英文说明见 [README](README.md)。
 
 ---
 
-## 截图
+## 动效演示
 
-> 截图由 `script/capture_screenshots.sh` 在授权终端 **屏幕录制（Screen Recording）**
-> 权限后生成。构建好应用后运行一次，PNG 会输出到 `docs/screenshots/`。
+![OverShelf 顶边展开动效](docs/screenshots/overshelf-reveal.gif)
 
-![OverShelf 面板](docs/screenshots/App.png)
-
-> 面板从屏幕顶部滑下，覆盖整屏宽度，剪贴板、文件、笔记、待办并排显示。
-> 如需更多截图（设置、菜单栏、单个面板），在终端授予 **屏幕录制** 权限后运行
-> `script/capture_screenshots.sh` 即可生成。
-
----
-
-## 通过 Homebrew 安装（计划中）
-
-发布 GitHub Release 后，OverShelf 可作为 Homebrew Cask 分发。完整 tap 与 formula 配置见
-[docs/homebrew.md](docs/homebrew.md)。简而言之，打 tag 发布后：
+使用 Homebrew 的 `ffmpeg` 从真实应用帧重新生成动图：
 
 ```bash
-brew tap ALLENYGY/tap
-brew install --cask overshelf
+brew install ffmpeg
+./script/capture_demo.sh
 ```
+
+运行前请授予终端 **屏幕录制（Screen Recording）** 权限。静态 PNG 仍可通过
+`script/capture_screenshots.sh` 生成。
 
 ---
 
@@ -150,7 +176,7 @@ OverShelf/
   Window/         # DropDownPanel, WindowManager, TopEdgeTracker, 快捷键
   Resources/      # AppIcon、内置 Markdown 库（markdown-it, KaTeX, DOMPurify）
 Tests/            # 迁移、服务、边缘追踪、面板帧、Markdown 测试
-script/           # build_and_run.sh, capture_screenshots.sh
+script/           # 构建、静态截图与动图生成脚本
 dist/             # 构建产物 OverShelf.app（已 gitignore）
 ```
 
@@ -162,7 +188,7 @@ dist/             # 构建产物 OverShelf.app（已 gitignore）
 - **WebKit** 驱动 Markdown 预览。渲染器（`markdown-it`）、数学（`KaTeX`）、净化器
   （`DOMPurify`）全部离线内置在 `OverShelf/Resources/Markdown/`，无网络、无 CDN。
 - **无第三方 Swift 依赖**，全部使用标准库与系统框架。
-- 自定义触顶鼠标追踪（`TopEdgeTracker`）与定时器驱动的滑动动画（`WindowManager`），
+- 自定义触顶鼠标追踪（`TopEdgeTracker`）与裁切式展开状态（`WindowManager`），
   不依赖任何私有 API。
 
 ---

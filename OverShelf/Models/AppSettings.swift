@@ -2,6 +2,30 @@ import Foundation
 import SwiftUI
 import Cocoa
 
+enum AppearanceMode: String, Codable, CaseIterable, Identifiable {
+    case system
+    case light
+    case dark
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .system: return "System"
+        case .light: return "Light"
+        case .dark: return "Dark"
+        }
+    }
+
+    var appKitName: NSAppearance.Name? {
+        switch self {
+        case .system: return nil
+        case .light: return .aqua
+        case .dark: return .darkAqua
+        }
+    }
+}
+
 /// Which panel this is.
 enum PanelType: String, Codable, CaseIterable, Identifiable {
     case clipboard
@@ -35,8 +59,9 @@ struct AppSettingsData: Codable {
     var panelOrder: [PanelType] = [.clipboard, .files, .notes, .todo]
     var panelWidths: [PanelType: CGFloat] = [.clipboard: 260, .files: 240, .notes: 280, .todo: 260]
     var hiddenPanels: Set<PanelType> = []
-    var windowOpacity: Double = 0.92
+    var windowOpacity: Double = 1.0
     var windowHeight: CGFloat = 420
+    var appearanceMode: AppearanceMode? = .system
     var edgeTriggerEnabled: Bool = true
     var dragToEdgeEnabled: Bool = true
     var hotkeyCode: UInt32 = 8 // C key
@@ -82,6 +107,11 @@ final class AppSettings {
         set { data.windowHeight = newValue; save() }
     }
 
+    var appearanceMode: AppearanceMode {
+        get { data.appearanceMode ?? .system }
+        set { data.appearanceMode = newValue; save() }
+    }
+
     var edgeTriggerEnabled: Bool {
         get { data.edgeTriggerEnabled }
         set { data.edgeTriggerEnabled = newValue; save() }
@@ -122,6 +152,10 @@ final class AppSettings {
 
     private func migrateIfNeeded() {
         var changed = false
+        if data.appearanceMode == nil {
+            data.appearanceMode = .system
+            changed = true
+        }
         for panel in PanelType.allCases {
             if !data.panelOrder.contains(panel) {
                 data.panelOrder.append(panel)

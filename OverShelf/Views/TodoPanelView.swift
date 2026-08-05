@@ -22,9 +22,7 @@ struct TodoPanelView: View {
         VStack(spacing: 0) {
             PanelHeader(
                 title: "Todo",
-                iconName: "checklist",
-                onDetach: uiState.detachedPanels.contains(.todo) ? nil : { detachTodo() },
-                onReattach: uiState.detachedPanels.contains(.todo) ? { reattachTodo() } : nil
+                iconName: "checklist"
             )
 
             VStack(spacing: 0) {
@@ -48,7 +46,7 @@ struct TodoPanelView: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 5)
-                    .background(Color(nsColor: .unemphasizedSelectedContentBackgroundColor).opacity(0.4))
+                    .background(Theme.fieldBg)
                     .cornerRadius(6)
 
                     HStack(spacing: 4) {
@@ -66,7 +64,7 @@ struct TodoPanelView: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 5)
-                    .background(Color(nsColor: .unemphasizedSelectedContentBackgroundColor).opacity(0.4))
+                    .background(Theme.fieldBg)
                     .cornerRadius(6)
                 }
                 .padding(8)

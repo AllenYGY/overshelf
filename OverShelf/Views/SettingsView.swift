@@ -47,9 +47,19 @@ struct SettingsView: View {
             }
 
             Section("Window") {
+                Picker("Appearance", selection: Binding(
+                    get: { settings.appearanceMode },
+                    set: { uiState.onAppearanceChange?($0) }
+                )) {
+                    ForEach(AppearanceMode.allCases) { mode in
+                        Text(mode.displayName).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+
                 Slider(value: Binding(
                     get: { settings.windowOpacity },
-                    set: { settings.windowOpacity = $0 }
+                    set: { uiState.onOpacityChange?($0) }
                 ), in: 0.5...1.0) {
                     Text("Opacity")
                 }
@@ -189,7 +199,7 @@ struct HotkeyRecorder: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background(Color(nsColor: .unemphasizedSelectedContentBackgroundColor).opacity(0.4))
+            .background(Theme.fieldBg)
             .cornerRadius(5)
         }
         .buttonStyle(.plain)

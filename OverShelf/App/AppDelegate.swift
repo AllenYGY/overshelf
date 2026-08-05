@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Main app delegate: creates services, window manager, and status bar.
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    let persistence = PersistenceManager()
+    let persistence: PersistenceManager
     let clipboard: ClipboardMonitor
     let notes: NotesManager
     let files: FileStagingManager
@@ -14,6 +14,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsMonitor: Any?
 
    override init() {
+        if Self.readmeDemoProgress != nil {
+            let demoURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("OverShelf-ReadmeDemo", isDirectory: true)
+            self.persistence = PersistenceManager(baseURL: demoURL)
+        } else {
+            self.persistence = PersistenceManager()
+        }
         self.clipboard = ClipboardMonitor(persistence: persistence)
         self.notes = NotesManager(persistence: persistence)
         self.files = FileStagingManager(persistence: persistence)
@@ -40,9 +47,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         uiState.onHotkeyChange = { [weak self] code, mods in self?.windowManager.updateHotkey(keyCode: code, modifiers: mods) }
         uiState.onHistoryLimitChange = { [weak self] limit in self?.clipboard.setLimit(limit) }
         uiState.onLiveHeightChange = { [weak self] h in self?.windowManager.resizeHeight(to: h) }
+        uiState.onAppearanceChange = { [weak self] mode in self?.applyAppearance(mode) }
+        uiState.onOpacityChange = { [weak self] opacity in self?.windowManager.updateOpacity(opacity) }
+        applyAppearance(settings.appearanceMode)
+        showReadmeDemoFrameIfRequested()
 
         // Start clipboard monitoring
-        clipboard.start()
+        if Self.readmeDemoProgress == nil {
+            clipboard.start()
+        }
 
         // Cmd+, opens preferences whenever the app owns the key window
         // (dropdown panel, detached panel, or the settings window itself).
@@ -91,6 +104,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 .environment(windowManager.uiState)
         )
         settingsWindowController.show(content: content)
+    }
+
+    private func applyAppearance(_ mode: AppearanceMode) {
+        settings.appearanceMode = mode
+        NSApp.appearance = mode.appKitName.flatMap(NSAppearance.init(named:))
+    }
+
+    private static var readmeDemoProgress: CGFloat? {
+        let prefix = "--readme-demo-frame="
+        guard let argument = CommandLine.arguments.first(where: { $0.hasPrefix(prefix) }),
+              let value = Double(argument.dropFirst(prefix.count)) else {
+            return nil
+        }
+        return CGFloat(value)
+    }
+
+    private func showReadmeDemoFrameIfRequested() {
+        guard let progress = Self.readmeDemoProgress else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+            self?.windowManager.showDemoFrame(progress: progress)
+        }
     }
 
 }

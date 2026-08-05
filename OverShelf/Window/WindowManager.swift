@@ -14,6 +14,8 @@ final class UIState {
     var onHotkeyChange: ((UInt32, UInt32) -> Void)?
     var onHistoryLimitChange: ((Int) -> Void)?
     var onLiveHeightChange: ((CGFloat) -> Void)?
+    var onAppearanceChange: ((AppearanceMode) -> Void)?
+    var onOpacityChange: ((Double) -> Void)?
 }
 
 /// Manages the dropdown panel window: creation, show/hide animation,
@@ -35,6 +37,8 @@ final class WindowManager {
     private var detachedWindows: [PanelType: DetachedPanel] = [:]
     private var isAnimating = false
     private var animationTimer: Timer?
+    private var revealView: PanelRevealView?
+    private var revealState = PanelRevealState()
 
     init(persistence: PersistenceManager, clipboard: ClipboardMonitor, notes: NotesManager, files: FileStagingManager, todos: TodoManager, settings: AppSettings) {
         self.persistence = persistence
@@ -53,10 +57,11 @@ final class WindowManager {
     private func setupWindow() {
         let screen = NSScreen.main ?? NSScreen.screens.first!
         let height = settings.windowHeight
-        let frame = NSRect(x: screen.frame.minX, y: screen.frame.maxY, width: screen.frame.width, height: height)
+        let frame = dropdownPanelFrame(screenFrame: screen.frame, height: height)
 
         let panel = DropDownPanel(contentRect: frame)
-        panel.alphaValue = 0
+        panel.alphaValue = CGFloat(settings.windowOpacity)
+        panel.ignoresMouseEvents = true
 
         let content = MainContentView()
             .environment(clipboard)
@@ -66,9 +71,11 @@ final class WindowManager {
             .environment(settings)
             .environment(uiState)
 
-        let controller = NSHostingController(rootView: content)
-        panel.contentViewController = controller
+        let hostingController = NSHostingController(rootView: content)
+        let revealController = PanelRevealViewController(hostedController: hostingController)
+        panel.contentViewController = revealController
 
+        self.revealView = revealController.revealView
         self.panel = panel
     }
 
@@ -104,6 +111,11 @@ final class WindowManager {
         edgeTracker.dragToTopEnabled = enabled
     }
 
+    func updateOpacity(_ opacity: Double) {
+        settings.windowOpacity = opacity
+        panel?.alphaValue = CGFloat(opacity)
+    }
+
     // MARK: - Show / Hide
 
     func toggle() {
@@ -114,68 +126,87 @@ final class WindowManager {
         guard !uiState.isWindowVisible else { return }
         guard let panel = panel, let screen = screenWithMouse() else { return }
 
-        animationTimer?.invalidate()
-        animationTimer = nil
         uiState.isWindowVisible = true
         edgeTracker.windowDidShow(source: source)
 
         let height = settings.windowHeight
         let targetFrame = dropdownPanelFrame(screenFrame: screen.frame, height: height)
-        let alpha = CGFloat(settings.windowOpacity)
-
-        // Start fully above the screen; slide down with a gentle ease-in-out.
-        panel.setFrame(targetFrame.offsetBy(dx: 0, dy: height), display: false)
-        panel.alphaValue = alpha
+        revealState.startOpening()
+        panel.setFrame(targetFrame, display: false)
+        panel.alphaValue = CGFloat(settings.windowOpacity)
         panel.orderFrontRegardless()
-
-        animate(duration: 1.4, from: targetFrame.offsetBy(dx: 0, dy: height), to: targetFrame) { }
+        animateReveal(to: 1)
     }
 
     func hide() {
         guard uiState.isWindowVisible else { return }
-        guard let panel = panel, let screen = screenWithMouse() else { return }
-
-        animationTimer?.invalidate()
-        animationTimer = nil
+        guard panel != nil else { return }
         uiState.isWindowVisible = false
         edgeTracker.windowDidHide()
-
-        let startFrame = panel.frame
-        let endFrame = startFrame.offsetBy(dx: 0, dy: screen.frame.maxY - startFrame.minY)
-        animate(duration: 1.1, from: startFrame, to: endFrame) { [weak self] in
-            self?.panel?.orderOut(nil)
-        }
+        revealState.startClosing()
+        animateReveal(to: 0)
     }
 
-    /// Time-based slide animation (60 Hz) with an ease-in-out curve, so motion
-    /// starts and ends gently regardless of timer jitter.
-    private func animate(duration: TimeInterval, from startFrame: NSRect, to endFrame: NSRect, completion: @escaping () -> Void) {
+    private func animateReveal(to target: CGFloat) {
+        guard let panel, let revealView else { return }
+        animationTimer?.invalidate()
+        animationTimer = nil
+
+        let animation = PanelRevealAnimation(
+            from: revealState.progress,
+            to: target,
+            reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        )
+        revealView.usesReveal = animation.usesReveal
+        panel.ignoresMouseEvents = true
+
+        guard animation.duration > 0 else {
+            finishReveal(at: target)
+            return
+        }
+
         isAnimating = true
-        let start = Date()
+        let start = ProcessInfo.processInfo.systemUptime
         let timer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] timer in
-            guard let self = self, let panel = self.panel else { timer.invalidate(); return }
-            let p = CGFloat(min(1, Date().timeIntervalSince(start) / duration))
-            let eased = Self.easeInOutCubic(p)
-            let frame = NSRect(
-                x: startFrame.minX + (endFrame.minX - startFrame.minX) * eased,
-                y: startFrame.minY + (endFrame.minY - startFrame.minY) * eased,
-                width: startFrame.width,
-                height: startFrame.height
-            )
-            panel.setFrame(frame, display: true)
-            if p >= 1 {
+            guard let self else { timer.invalidate(); return }
+            let elapsed = CGFloat(ProcessInfo.processInfo.systemUptime - start)
+            self.revealState.update(progress: animation.progress(elapsed: elapsed))
+            revealView.progress = self.revealState.progress
+            if elapsed >= animation.duration {
                 timer.invalidate()
                 self.animationTimer = nil
-                self.isAnimating = false
-                completion()
+                self.finishReveal(at: target)
             }
         }
         animationTimer = timer
         RunLoop.main.add(timer, forMode: .common)
     }
 
-    static func easeInOutCubic(_ p: CGFloat) -> CGFloat {
-        p < 0.5 ? 4 * p * p * p : 1 - pow(-2 * p + 2, 3) / 2
+    private func finishReveal(at target: CGFloat) {
+        revealState.update(progress: target)
+        revealView?.progress = revealState.progress
+        isAnimating = false
+        if !revealState.isOrderedIn {
+            panel?.orderOut(nil)
+        } else {
+            panel?.ignoresMouseEvents = !revealState.acceptsMouseEvents
+        }
+    }
+
+    func showDemoFrame(progress: CGFloat) {
+        guard let panel, let revealView, let screen = NSScreen.main else { return }
+        let clampedProgress = min(1, max(0, progress))
+        panel.setFrame(
+            dropdownPanelFrame(screenFrame: screen.frame, height: settings.windowHeight),
+            display: false
+        )
+        panel.alphaValue = 1
+        panel.ignoresMouseEvents = true
+        revealState.startOpening()
+        revealState.update(progress: clampedProgress)
+        revealView.usesReveal = true
+        revealView.progress = clampedProgress
+        panel.orderFrontRegardless()
     }
 
     /// Live-resize the panel height while anchored to the top of the screen.
@@ -253,6 +284,8 @@ final class WindowManager {
     // MARK: - Cleanup
 
     func teardown() {
+        animationTimer?.invalidate()
+        animationTimer = nil
         edgeTracker.stop()
         hotkeyManager.unregister()
         clipboard.stop()

@@ -19,9 +19,7 @@ struct ClipboardPanelView: View {
         VStack(spacing: 0) {
             PanelHeader(
                 title: "Clipboard",
-                iconName: "clipboard",
-                onDetach: uiState.detachedPanels.contains(.clipboard) ? nil : { detachClipboard() },
-                onReattach: uiState.detachedPanels.contains(.clipboard) ? { reattachClipboard() } : nil
+                iconName: "clipboard"
             )
 
             // Tab switcher
@@ -53,7 +51,7 @@ struct ClipboardPanelView: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
-            .background(Color(nsColor: .unemphasizedSelectedContentBackgroundColor).opacity(0.4))
+            .background(Theme.fieldBg)
             .padding(.horizontal, 8)
             .padding(.bottom, 6)
 
