@@ -5,6 +5,8 @@ import SwiftUI
 @Observable
 final class UIState {
     var isWindowVisible: Bool = false
+    /// The isolated README demo scene, when launched with a demo argument.
+    var readmeDemoScene: ReadmeDemoScene?
     var detachedPanels: Set<PanelType> = []
     var settingsVisible: Bool = false
     var onDetachPanel: ((PanelType) -> Void)?
@@ -16,6 +18,10 @@ final class UIState {
     var onLiveHeightChange: ((CGFloat) -> Void)?
     var onAppearanceChange: ((AppearanceMode) -> Void)?
     var onOpacityChange: ((Double) -> Void)?
+
+    init(readmeDemoScene: ReadmeDemoScene? = nil) {
+        self.readmeDemoScene = readmeDemoScene
+    }
 }
 
 /// Manages the dropdown panel window: creation, show/hide animation,
@@ -23,7 +29,7 @@ final class UIState {
 final class WindowManager {
     private var panel: DropDownPanel?
     
-    private(set) var uiState = UIState()
+    private(set) var uiState: UIState
     let edgeTracker = TopEdgeTracker()
     private let hotkeyManager = GlobalHotkeyManager()
 
@@ -47,6 +53,9 @@ final class WindowManager {
         self.files = files
         self.todos = todos
         self.settings = settings
+        self.uiState = UIState(
+            readmeDemoScene: ReadmeDemoLaunchMode.parse(arguments: CommandLine.arguments).scene
+        )
         setupWindow()
         setupEdgeTracker()
         setupHotkey()
@@ -193,8 +202,10 @@ final class WindowManager {
         }
     }
 
-    func showDemoFrame(progress: CGFloat) {
+    func showDemoFrame(progress: CGFloat, scene: ReadmeDemoScene? = nil) {
         guard let panel, let revealView, let screen = NSScreen.main else { return }
+        // Scene selection is presentational only; demo frames remain noninteractive.
+        if let scene { uiState.readmeDemoScene = scene }
         let clampedProgress = min(1, max(0, progress))
         panel.setFrame(
             dropdownPanelFrame(screenFrame: screen.frame, height: settings.windowHeight),

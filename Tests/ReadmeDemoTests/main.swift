@@ -15,6 +15,13 @@ guard notesMode == .scene(.notes), notesMode.isDemo, notesMode.scene == .notes e
     fail("notes scene argument was not parsed")
 }
 
+for scene in ReadmeDemoScene.allCases {
+    let mode = ReadmeDemoLaunchMode.parse(arguments: ["OverShelf", "--readme-demo-scene=\(scene.rawValue)"])
+    guard mode == .scene(scene) else {
+        fail("scene argument did not parse for \(scene.rawValue)")
+    }
+}
+
 let invalidMode = ReadmeDemoLaunchMode.parse(
     arguments: ["OverShelf", "--readme-demo-scene=notse"]
 )
@@ -57,6 +64,8 @@ guard let files = persistence.load(StagedFilesStore.self, forKey: "staged_files"
 
 guard let notes = persistence.load(NotesStore.self, forKey: "notes"),
       notes.notes.count == 1,
+      notes.notes[0].title == "Launch notes",
+      notes.notes[0].pinned,
       notes.notes[0].body == """
       # Launch notes
 

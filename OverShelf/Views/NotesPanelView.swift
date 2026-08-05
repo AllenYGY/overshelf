@@ -10,6 +10,7 @@ struct NotesPanelView: View {
     @State private var noteBody: String = ""
     @State private var searchFocused = false
     @State private var isPreviewing = false
+    @State private var didConfigureDemoScene = false
 
     var displayedNotes: [Note] {
         notes.search(searchText)
@@ -29,6 +30,7 @@ struct NotesPanelView: View {
             }
         }
         .background(Theme.panelBg)
+        .onAppear(perform: configureDemoSceneIfNeeded)
     }
 
     // MARK: - Note list
@@ -112,6 +114,16 @@ struct NotesPanelView: View {
     }
 
     // MARK: - Note editor
+
+    private func configureDemoSceneIfNeeded() {
+        guard !didConfigureDemoScene else { return }
+        didConfigureDemoScene = true
+        guard uiState.readmeDemoScene == .notes || uiState.readmeDemoScene == .overview,
+              let note = notes.notes.first else { return }
+        selectedNoteId = note.id
+        noteBody = note.body
+        isPreviewing = true
+    }
 
     private func noteEditor(_ note: Note) -> some View {
         VStack(spacing: 0) {
