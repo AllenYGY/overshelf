@@ -105,12 +105,14 @@ enum ReadmeDemoData {
                 TodoItem(
                     title: "Polish the README",
                     priority: .high,
+                    dueDate: baseDate.addingTimeInterval(2 * 86_400),
                     createdAt: baseDate,
                     modifiedAt: baseDate.addingTimeInterval(180)
                 ),
                 TodoItem(
                     title: "Publish the build",
                     priority: .medium,
+                    dueDate: baseDate.addingTimeInterval(4 * 86_400),
                     createdAt: baseDate,
                     modifiedAt: baseDate.addingTimeInterval(120)
                 ),
@@ -118,6 +120,7 @@ enum ReadmeDemoData {
                     title: "Update Homebrew",
                     isCompleted: true,
                     priority: .low,
+                    dueDate: baseDate.addingTimeInterval(6 * 86_400),
                     createdAt: baseDate,
                     modifiedAt: baseDate.addingTimeInterval(60)
                 )

@@ -42,7 +42,8 @@ capture_frame() {
   open -n "$APP_BUNDLE" --args \
     "--readme-demo-scene=$scene" \
     "--readme-demo-frame=$progress"
-  sleep 0.7
+  # SwiftUI lists and the Markdown preview must finish their first render.
+  sleep 2
   screencapture -x "$UNIQUE_DIR/$name.png"
   validate_capture "$UNIQUE_DIR/$name.png"
 }
@@ -149,13 +150,14 @@ generate_reveal_frame 0.40 "$UNIQUE_DIR/normalized-close-40.png"
 generate_reveal_frame 0.10 "$UNIQUE_DIR/normalized-close-10.png"
 
 append_frame "$UNIQUE_DIR/normalized-hidden.png" 12
-for name in open-15 open-45 open-75 open-full; do
-  append_frame "$UNIQUE_DIR/normalized-$name.png" 2
+for name in open-15 open-45 open-75; do
+  append_frame "$UNIQUE_DIR/normalized-$name.png" 1
 done
+append_frame "$UNIQUE_DIR/normalized-open-full.png" 5
 for name in focus-clipboard focus-files focus-notes focus-todo; do
   append_frame "$UNIQUE_DIR/normalized-$name.png" 40
 done
-append_frame "$UNIQUE_DIR/normalized-overview-full.png" 48
+append_frame "$UNIQUE_DIR/normalized-overview-full.png" 54
 for name in close-75 close-40 close-10; do
   append_frame "$UNIQUE_DIR/normalized-$name.png" 2
 done
@@ -172,5 +174,21 @@ ffmpeg -hide_banner -loglevel error -y \
   -filter_complex \
   "split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=sierra2_4a" \
   -loop 0 "$OUTPUT"
+
+EXPECTED_FRAME_COUNT=255
+OUTPUT_WIDTH="$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$OUTPUT")"
+OUTPUT_HEIGHT="$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$OUTPUT")"
+OUTPUT_FRAME_COUNT="$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of csv=p=0 "$OUTPUT")"
+OUTPUT_DURATION="$(ffprobe -v error -select_streams v:0 -show_entries stream=duration -of csv=p=0 "$OUTPUT")"
+if [[ "$OUTPUT_WIDTH" -ne "$CANVAS_WIDTH" ]] ||
+   [[ "$OUTPUT_HEIGHT" -ne "$CANVAS_HEIGHT" ]] ||
+   [[ "$OUTPUT_FRAME_COUNT" -ne "$EXPECTED_FRAME_COUNT" ]] ||
+   ! awk -v duration="$OUTPUT_DURATION" 'BEGIN { exit !(duration >= 8.3 && duration <= 8.7) }'; then
+  echo "ERROR: GIF metrics were ${OUTPUT_WIDTH}x${OUTPUT_HEIGHT}, ${OUTPUT_FRAME_COUNT} frames, ${OUTPUT_DURATION}s." >&2
+  exit 1
+fi
+ffmpeg -hide_banner -loglevel error -y -sseof -0.04 -i "$OUTPUT" \
+  -frames:v 1 "$UNIQUE_DIR/final-frame.png"
+validate_capture "$UNIQUE_DIR/final-frame.png"
 
 echo "Wrote $OUTPUT ($(du -h "$OUTPUT" | cut -f1))"

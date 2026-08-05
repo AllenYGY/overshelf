@@ -86,6 +86,12 @@ guard let notes = persistence.load(NotesStore.self, forKey: "notes"),
 
 guard let todos = persistence.load(TodoStore.self, forKey: "todos"),
       todos.items.map(\.title) == ["Polish the README", "Publish the build", "Update Homebrew"],
+      todos.items.map(\.priority) == [.high, .medium, .low],
+      todos.items.map(\.dueDate) == [
+          Date(timeIntervalSince1970: 1_753_689_600 + 2 * 86_400),
+          Date(timeIntervalSince1970: 1_753_689_600 + 4 * 86_400),
+          Date(timeIntervalSince1970: 1_753_689_600 + 6 * 86_400)
+      ],
       todos.items.contains(where: { $0.isCompleted }) else {
     fail("seeded todos did not match the fixture")
 }
