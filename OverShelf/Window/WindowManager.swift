@@ -212,7 +212,7 @@ final class WindowManager {
             display: false
         )
         panel.alphaValue = 1
-        panel.ignoresMouseEvents = true
+        panel.ignoresMouseEvents = !ReadmeDemoPresentation.demoFramesAreInteractive
         revealState.startOpening()
         revealState.update(progress: clampedProgress)
         revealView.usesReveal = true
