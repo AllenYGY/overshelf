@@ -5,6 +5,7 @@
 # Codex / agent local state
 .codex/
 .superpowers/
+.worktrees/
 
 # Build output
 dist/
