@@ -8,7 +8,7 @@ SwiftUI 构建。
 
 > OverShelf 是一款原创应用，借鉴了经典的「下拉抽屉」交互形态，与任何现有产品无关联。
 
-![OverShelf 顶边展开动效](docs/screenshots/overshelf-reveal.gif)
+![OverShelf 顶边展开动效](docs/screenshots/App.png)
 
 ---
 
@@ -65,7 +65,7 @@ SwiftUI 构建。
 
 所有数据以 JSON 形式本地存储在：
 
-```
+```txt
 ~/Library/Application Support/OverShelf/
 ```
 
@@ -149,25 +149,9 @@ brew uninstall --cask --zap overshelf
 
 ---
 
-## 动效演示
-
-![OverShelf 顶边展开动效](docs/screenshots/overshelf-reveal.gif)
-
-使用 Homebrew 的 `ffmpeg` 从真实应用帧重新生成动图：
-
-```bash
-brew install ffmpeg
-./script/capture_demo.sh
-```
-
-运行前请授予终端 **屏幕录制（Screen Recording）** 权限。静态 PNG 仍可通过
-`script/capture_screenshots.sh` 生成。
-
----
-
 ## 目录结构
 
-```
+```txt
 OverShelf/
   App/            # 应用入口、AppDelegate、菜单栏菜单
   Models/         # AppSettings, ClipboardItem, Note, StagedFile, TodoItem

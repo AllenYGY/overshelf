@@ -9,13 +9,15 @@ desktop clutter. Built with Swift and SwiftUI.
 > OverShelf is an original app inspired by the classic "dropdown drawer"
 > interaction pattern. It is not affiliated with any existing product.
 
-![OverShelf top-edge reveal](docs/screenshots/overshelf-reveal.gif)
+![OverShelf top-edge reveal](docs/screenshots/App.png)
 
 ---
 
 ## Features
 
 ### One panel, four tools
+
+![OverShelf top-edge reveal](docs/screenshots/overshelf-reveal.gif)
 
 - **Clipboard history** - automatically records text, images, and files you
   copy. Browse recent items, search, star favorites, and click any entry to
@@ -72,7 +74,7 @@ Click the menu bar icon (stack icon) for:
 
 Everything is stored locally as JSON in:
 
-```
+```txt
 ~/Library/Application Support/OverShelf/
 ```
 
@@ -183,7 +185,7 @@ script. Static PNG captures can still be generated with
 
 ## Project layout
 
-```
+```txt
 OverShelf/
   App/            # App entry, AppDelegate, status bar menu
   Models/         # AppSettings, ClipboardItem, Note, StagedFile, TodoItem
