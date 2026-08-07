@@ -14,17 +14,13 @@ struct FilesPanelView: View {
                 title: "Files",
                 iconName: "tray.full"
             ) {
-                Picker("File view", selection: Binding(
-                    get: { settings.filesViewMode },
-                    set: { settings.filesViewMode = $0 }
-                )) {
-                    Image(systemName: "list.bullet").tag(FilesViewMode.list).help("View as List")
-                    Image(systemName: "square.grid.2x2").tag(FilesViewMode.icons).help("View as Icons")
+                HStack(spacing: 2) {
+                    viewModeButton(.list, icon: "list.bullet", help: "View as List")
+                    viewModeButton(.icons, icon: "square.grid.2x2", help: "View as Icons")
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .controlSize(.mini)
-                .frame(width: 54)
+                .padding(2)
+                .background(Theme.fieldBg)
+                .cornerRadius(6)
             }
 
             if files.stagedFiles.isEmpty {
@@ -144,6 +140,21 @@ struct FilesPanelView: View {
     private func revealFile(_ file: StagedFile) {
         guard let url = files.resolveURL(for: file) else { return }
         NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    private func viewModeButton(_ mode: FilesViewMode, icon: String, help: String) -> some View {
+        Button {
+            settings.filesViewMode = mode
+        } label: {
+            Image(systemName: icon)
+                .font(.system(size: 10))
+                .foregroundStyle(settings.filesViewMode == mode ? .primary : .secondary)
+                .frame(width: 20, height: 18)
+                .background(settings.filesViewMode == mode ? Theme.rowSelected : Color.clear)
+                .cornerRadius(4)
+        }
+        .buttonStyle(.plain)
+        .help(help)
     }
 }
 
