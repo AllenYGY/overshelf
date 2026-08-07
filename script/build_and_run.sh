@@ -98,7 +98,22 @@ stage_bundle() {
   mkdir -p "$STAGE_MACOS" "$STAGE_RESOURCES"
   cp "$DIST_DIR/$APP_NAME" "$STAGE_MACOS/$APP_NAME"
   chmod +x "$STAGE_MACOS/$APP_NAME"
-  cp "$ROOT_DIR/OverShelf/Resources/AppIcon.icns" "$STAGE_RESOURCES/" || { echo "ERROR: AppIcon.icns copy failed" >&2; exit 1; }
+
+  # Generate the bundle icon from the asset catalog so PNG and ICNS cannot drift.
+  ICONSET_DIR="$STAGE_DIR/AppIcon.iconset"
+  APP_ICON_DIR="$ROOT_DIR/OverShelf/Assets.xcassets/AppIcon.appiconset"
+  mkdir -p "$ICONSET_DIR"
+  cp "$APP_ICON_DIR/icon-16.png" "$ICONSET_DIR/icon_16x16.png"
+  cp "$APP_ICON_DIR/icon-32.png" "$ICONSET_DIR/icon_16x16@2x.png"
+  cp "$APP_ICON_DIR/icon-32.png" "$ICONSET_DIR/icon_32x32.png"
+  cp "$APP_ICON_DIR/icon-64.png" "$ICONSET_DIR/icon_32x32@2x.png"
+  cp "$APP_ICON_DIR/icon-128.png" "$ICONSET_DIR/icon_128x128.png"
+  cp "$APP_ICON_DIR/icon-256.png" "$ICONSET_DIR/icon_128x128@2x.png"
+  cp "$APP_ICON_DIR/icon-256.png" "$ICONSET_DIR/icon_256x256.png"
+  cp "$APP_ICON_DIR/icon-512.png" "$ICONSET_DIR/icon_256x256@2x.png"
+  cp "$APP_ICON_DIR/icon-512.png" "$ICONSET_DIR/icon_512x512.png"
+  cp "$APP_ICON_DIR/icon-1024.png" "$ICONSET_DIR/icon_512x512@2x.png"
+  iconutil -c icns "$ICONSET_DIR" -o "$STAGE_RESOURCES/AppIcon.icns" || { echo "ERROR: AppIcon.icns generation failed" >&2; exit 1; }
   # Guard against the silent 0-byte icon failure mode.
   [ -s "$STAGE_RESOURCES/AppIcon.icns" ] || { echo "ERROR: AppIcon.icns is empty after copy" >&2; exit 1; }
   cp -R "$ROOT_DIR/OverShelf/Resources/Markdown" "$STAGE_RESOURCES/" 2>/dev/null || true
@@ -336,9 +351,11 @@ case "$MODE" in
       -L "$PATCHED_SWIFT" \
       -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE" \
       -swift-version 5 \
-      -framework Foundation \
+      -framework Cocoa \
       Tests/AppBundleTests/main.swift
-    DROPSHELF_APP_BUNDLE="$APP_BUNDLE" "$DIST_DIR/AppBundleTests"
+    DROPSHELF_APP_BUNDLE="$APP_BUNDLE" \
+      DROPSHELF_APP_ICON_SOURCE="$ROOT_DIR/OverShelf/Assets.xcassets/AppIcon.appiconset/icon-1024.png" \
+      "$DIST_DIR/AppBundleTests"
     echo "Running app launch check..."
     open_app
     sleep 2
