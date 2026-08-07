@@ -16,14 +16,7 @@ struct TodoPanelView: View {
 
     @State private var searchText = ""
     @State private var filter: TodoFilter = .all
-    @State private var draft: TodoDraft?
-    @State private var draftFocusRequest = 0
-
-    private struct TodoDraft: Equatable {
-        var title = ""
-        var priority: TodoItem.Priority = .medium
-        var dueDate: Date?
-    }
+    @State private var editingTodoId: UUID?
 
     var displayedItems: [TodoItem] {
         let base = searchText.isEmpty ? todos.items : todos.search(searchText)
@@ -40,7 +33,7 @@ struct TodoPanelView: View {
                 title: "Todo",
                 iconName: "checklist"
             ) {
-                Button(action: beginDraft) {
+                Button(action: createAndEdit) {
                     Image(systemName: "plus")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(.primary)
@@ -49,8 +42,20 @@ struct TodoPanelView: View {
                 .help("Add task")
             }
 
-            VStack(spacing: 0) {
-                // Search bar
+            if let id = editingTodoId, let todo = todos.items.first(where: { $0.id == id }) {
+                todoEditor(todo)
+            } else {
+                todoList
+            }
+        }
+        .background(Theme.panelBg)
+    }
+
+    // MARK: - Todo list
+
+    private var todoList: some View {
+        VStack(spacing: 0) {
+            // Search bar
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 11))
@@ -110,7 +115,7 @@ struct TodoPanelView: View {
                 .padding(.bottom, 6)
 
                 // Todo list
-                if draft == nil && displayedItems.isEmpty {
+                if displayedItems.isEmpty {
                     VStack(spacing: 8) {
                         Image(systemName: "checklist")
                             .font(.system(size: 28))
@@ -119,7 +124,7 @@ struct TodoPanelView: View {
                             .font(.system(size: 12))
                             .foregroundStyle(.tertiary)
                         if searchText.isEmpty {
-                            Button("Add first task") { beginDraft() }
+                            Button("Add first task") { createAndEdit() }
                                 .font(.system(size: 11))
                                 .buttonStyle(.plain)
                                 .foregroundStyle(Color.accentColor)
@@ -129,26 +134,6 @@ struct TodoPanelView: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            if let currentDraft = draft {
-                                TodoDraftRow(
-                                    title: Binding(
-                                        get: { currentDraft.title },
-                                        set: { draft?.title = $0 }
-                                    ),
-                                    priority: Binding(
-                                        get: { currentDraft.priority },
-                                        set: { draft?.priority = $0 }
-                                    ),
-                                    dueDate: Binding(
-                                        get: { currentDraft.dueDate },
-                                        set: { draft?.dueDate = $0 }
-                                    ),
-                                    focusRequest: draftFocusRequest,
-                                    onSubmit: submitDraft,
-                                    onCancel: { draft = nil }
-                                )
-                                Divider()
-                            }
                             ForEach(displayedItems) { item in
                                 TodoRow(
                                     item: item,
@@ -165,8 +150,6 @@ struct TodoPanelView: View {
                 }
             }
         }
-        .background(Theme.panelBg)
-    }
 
     private func count(for filter: TodoFilter) -> Int {
         switch filter {
@@ -176,179 +159,165 @@ struct TodoPanelView: View {
         }
     }
 
-    private func beginDraft() {
-        if draft == nil {
-            draft = TodoDraft()
-        }
-        draftFocusRequest += 1
+    private func createAndEdit() {
+        let todo = todos.createTodo(title: "")
+        editingTodoId = todo.id
     }
 
-    private func submitDraft(addAnother: Bool = false) {
-        guard let currentDraft = draft else { return }
-        let title = currentDraft.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty else { return }
-        todos.createTodo(
-            title: title,
-            priority: currentDraft.priority,
-            dueDate: currentDraft.dueDate
-        )
-        if addAnother {
-            draft = TodoDraft()
-            draftFocusRequest += 1
-        } else {
-            draft = nil
+    private func finishEditing(_ todo: TodoItem) {
+        if todo.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            todos.deleteTodo(id: todo.id)
         }
+        editingTodoId = nil
     }
-}
 
-/// An inline draft row for collecting task title, priority, and due date.
-struct TodoDraftRow: View {
-    @Binding var title: String
-    @Binding var priority: TodoItem.Priority
-    @Binding var dueDate: Date?
-    let focusRequest: Int
-    let onSubmit: (Bool) -> Void
-    let onCancel: () -> Void
+    // MARK: - Todo editor
 
-    @FocusState private var isTitleFocused: Bool
-    @State private var showDatePicker = false
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "circle")
-                .font(.system(size: 14))
-                .foregroundStyle(.secondary)
-                .frame(width: 16, height: 16, alignment: .center)
-
-            VStack(alignment: .leading, spacing: 4) {
-                TextField("New task", text: $title)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 12))
-                    .focused($isTitleFocused)
-                    .onSubmit { onSubmit(false) }
-                    .onExitCommand(perform: onCancel)
-
-                HStack(spacing: 6) {
-                    priorityControl
-                    dueDateControl
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            HStack(spacing: 4) {
-                Button { onSubmit(false) } label: {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 10))
-                        .foregroundStyle(canSubmit ? .green : .secondary)
+    private func todoEditor(_ todo: TodoItem) -> some View {
+        VStack(spacing: 0) {
+            // Editor toolbar
+            HStack(spacing: 6) {
+                Button {
+                    finishEditing(todo)
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 12))
+                    Text("Todo")
+                        .font(.system(size: 11))
                 }
                 .buttonStyle(.plain)
-                .disabled(!canSubmit)
-                .help("Add task")
 
-                Button { onSubmit(true) } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 10))
-                        .foregroundStyle(canSubmit ? Color.accentColor : .secondary)
-                }
-                .buttonStyle(.plain)
-                .disabled(!canSubmit)
-                .keyboardShortcut(.return, modifiers: .command)
-                .help("Add and create another")
+                Spacer()
 
-                Button(action: onCancel) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 10))
+                Button {
+                    todos.deleteTodo(id: todo.id)
+                    editingTodoId = nil
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
-                .help("Cancel")
+                .help("Delete task")
             }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .onAppear { isTitleFocused = true }
-        .onChange(of: focusRequest) { _, _ in isTitleFocused = true }
-    }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Theme.sidebarBg)
 
-    private var canSubmit: Bool {
-        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
+            VStack(alignment: .leading, spacing: 12) {
+                TextField("Task title", text: Binding(
+                    get: { todo.title },
+                    set: { todos.updateTitle(id: todo.id, title: $0) }
+                ))
+                .textFieldStyle(.plain)
+                .font(.system(size: 14, weight: .medium))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(Theme.fieldBg)
+                .cornerRadius(6)
 
-    private var priorityControl: some View {
-        HStack(spacing: 4) {
-            ForEach(TodoItem.Priority.allCases) { p in
-                Button {
-                    priority = p
-                } label: {
-                    HStack(spacing: 3) {
-                        Circle()
-                            .fill(p.swiftUIColor)
-                            .frame(width: 6, height: 6)
-                        Text(p.displayName.prefix(1))
-                            .font(.system(size: 9, weight: .medium))
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Priority")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        ForEach(TodoItem.Priority.allCases) { p in
+                            Button {
+                                todos.updatePriority(id: todo.id, priority: p)
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Circle()
+                                        .fill(p.swiftUIColor)
+                                        .frame(width: 8, height: 8)
+                                    Text(p.displayName)
+                                        .font(.system(size: 11))
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(todo.priority == p ? Theme.rowHover : Color.clear)
+                                .cornerRadius(6)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 2)
-                    .background(priority == p ? Theme.rowHover : Color.clear)
-                    .cornerRadius(4)
                 }
-                .buttonStyle(.plain)
-            }
-        }
-    }
 
-    private var dueDateControl: some View {
-        HStack(spacing: 4) {
-            dateChip("Today", date: Date())
-            dateChip("Tomorrow", date: Date().addingTimeInterval(86400))
-            dateChip("+1 Week", date: Date().addingTimeInterval(7 * 86400))
-            Button { showDatePicker.toggle() } label: {
-                Text("Custom")
-                    .font(.system(size: 9))
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 2)
-                    .background(isCustomDate ? Theme.rowHover : Color.clear)
-                    .cornerRadius(4)
-            }
-            .buttonStyle(.plain)
-            .popover(isPresented: $showDatePicker, arrowEdge: .top) {
-                DueDateCalendarView(
-                    selected: dueDate,
-                    onSelect: { date in
-                        dueDate = date
-                        showDatePicker = false
-                    },
-                    onClear: {
-                        dueDate = nil
-                        showDatePicker = false
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Due date")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        dateButton("Today", date: Date(), todo: todo)
+                        dateButton("Tomorrow", date: Date().addingTimeInterval(86400), todo: todo)
+                        dateButton("+1 Week", date: Date().addingTimeInterval(7 * 86400), todo: todo)
+                        TodoDatePickerButton(todo: todo, todos: todos)
                     }
-                )
+                }
+
+                Spacer()
             }
+            .padding(10)
         }
     }
 
-    private func dateChip(_ label: String, date: Date) -> some View {
-        Button { dueDate = date } label: {
+    private func dateButton(_ label: String, date: Date, todo: TodoItem) -> some View {
+        Button {
+            todos.updateDueDate(id: todo.id, dueDate: date)
+        } label: {
             Text(label)
-                .font(.system(size: 9))
-                .padding(.horizontal, 5)
-                .padding(.vertical, 2)
-                .background(isSameDay(dueDate, date) ? Theme.rowHover : Color.clear)
-                .cornerRadius(4)
+                .font(.system(size: 11))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(isSameDay(todo.dueDate, date) ? Theme.rowHover : Color.clear)
+                .cornerRadius(6)
         }
         .buttonStyle(.plain)
-    }
-
-    private var isCustomDate: Bool {
-        guard let d = dueDate else { return false }
-        return !isSameDay(d, Date())
-            && !isSameDay(d, Date().addingTimeInterval(86400))
-            && !isSameDay(d, Date().addingTimeInterval(7 * 86400))
     }
 
     private func isSameDay(_ a: Date?, _ b: Date) -> Bool {
         guard let a = a else { return false }
         return Calendar.current.isDate(a, inSameDayAs: b)
+    }
+}
+
+/// A calendar button used inside the Todo editor.
+struct TodoDatePickerButton: View {
+    let todo: TodoItem
+    let todos: TodoManager
+
+    @State private var showDatePicker = false
+
+    var body: some View {
+        Button { showDatePicker.toggle() } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 11))
+                if let due = todo.dueDate {
+                    Text(due, style: .date)
+                        .font(.system(size: 11))
+                } else {
+                    Text("Custom")
+                        .font(.system(size: 11))
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .foregroundStyle(todo.dueDate == nil ? .secondary : Color.accentColor)
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $showDatePicker, arrowEdge: .top) {
+            DueDateCalendarView(
+                selected: todo.dueDate,
+                onSelect: { date in
+                    todos.updateDueDate(id: todo.id, dueDate: date)
+                    showDatePicker = false
+                },
+                onClear: {
+                    todos.updateDueDate(id: todo.id, dueDate: nil)
+                    showDatePicker = false
+                }
+            )
+        }
     }
 }
 
