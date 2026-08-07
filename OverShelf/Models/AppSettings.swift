@@ -26,6 +26,13 @@ enum AppearanceMode: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum FilesViewMode: String, Codable, CaseIterable, Identifiable {
+    case list
+    case icons
+
+    var id: String { rawValue }
+}
+
 /// Which panel this is.
 enum PanelType: String, Codable, CaseIterable, Identifiable {
     case clipboard
@@ -63,6 +70,7 @@ struct AppSettingsData: Codable {
     var panelWidths: [PanelType: CGFloat] = [.clipboard: 260, .files: 240, .notes: 280, .todo: 260, .workspaces: 280]
     var hiddenPanels: Set<PanelType> = [.workspaces]
     var windowOpacity: Double = 1.0
+    var filesViewMode: FilesViewMode? = .list
     var windowHeight: CGFloat = 420
     var appearanceMode: AppearanceMode? = .system
     var edgeTriggerEnabled: Bool = true
@@ -145,6 +153,11 @@ final class AppSettings {
         set { data.clipboardHistoryLimit = newValue; save() }
     }
 
+    var filesViewMode: FilesViewMode {
+        get { data.filesViewMode ?? .list }
+        set { data.filesViewMode = newValue; save() }
+    }
+
     var visiblePanels: [PanelType] {
         data.panelOrder.filter { !data.hiddenPanels.contains($0) }
     }
@@ -155,6 +168,10 @@ final class AppSettings {
 
     private func migrateIfNeeded() {
         var changed = false
+        if data.filesViewMode == nil {
+            data.filesViewMode = .list
+            changed = true
+        }
         if data.appearanceMode == nil {
             data.appearanceMode = .system
             changed = true

@@ -15,12 +15,31 @@ try? oldJSON.data(using: .utf8)!.write(to: settingsURL)
 let persistence = PersistenceManager(baseURL: tempDir)
 let settings = AppSettings(persistence: persistence)
 
+guard let migratedData = try? Data(contentsOf: settingsURL),
+      let migratedObj = try? JSONSerialization.jsonObject(with: migratedData) as? [String: Any],
+      let order = migratedObj["panelOrder"] as? [String],
+      order.contains("todo"),
+      order.contains("workspaces"),
+      migratedObj["appearanceMode"] as? String == "system",
+      migratedObj["filesViewMode"] as? String == "list" else {
+    fatalError("migration did not persist expected fields")
+}
+
 guard settings.appearanceMode == .system else {
     fatalError("legacy settings should default to the system appearance")
 }
 guard settings.windowOpacity == 0.73 else {
     fatalError("migration should preserve an existing window opacity")
 }
+guard settings.filesViewMode == .list else {
+    fatalError("legacy settings should migrate Files to List view")
+}
+
+settings.filesViewMode = .icons
+guard AppSettings(persistence: persistence).filesViewMode == .icons else {
+    fatalError("Files view mode should persist across reload")
+}
+
 guard AppearanceMode.system.appKitName == nil,
       AppearanceMode.light.appKitName == .aqua,
       AppearanceMode.dark.appKitName == .darkAqua else {
@@ -42,15 +61,6 @@ guard settings.panelWidths[.workspaces] != nil else {
 guard settings.visiblePanels == [.clipboard, .files, .notes, .todo],
       settings.hiddenPanels.contains(.workspaces) else {
     fatalError("migration should preserve the four-panel default and keep Workspaces opt-in")
-}
-
-guard let data = try? Data(contentsOf: settingsURL),
-      let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-      let order = obj["panelOrder"] as? [String],
-      order.contains("todo"),
-      order.contains("workspaces"),
-      obj["appearanceMode"] as? String == "system" else {
-    fatalError("migration did not persist Todo panel")
 }
 
 let reloadedSettings = AppSettings(persistence: persistence)
@@ -102,4 +112,7 @@ guard newSettings.visiblePanels == [.clipboard, .files, .notes, .todo],
     fatalError("new settings should default to the original four visible panels")
 }
 
+guard newSettings.filesViewMode == .list else {
+    fatalError("new settings should default Files to List view")
+}
 print("Migration test passed: \(settings.panelOrder.map(\.rawValue).joined(separator: ", "))")
