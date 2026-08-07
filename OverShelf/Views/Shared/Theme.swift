@@ -17,9 +17,16 @@ enum Theme {
 }
 
 /// A compact panel header with title and optional action buttons.
-struct PanelHeader: View {
+struct PanelHeader<Trailing: View>: View {
     let title: String
     let iconName: String
+    @ViewBuilder let trailing: Trailing
+
+    init(title: String, iconName: String, @ViewBuilder trailing: () -> Trailing) {
+        self.title = title
+        self.iconName = iconName
+        self.trailing = trailing()
+    }
 
     var body: some View {
         HStack(spacing: 6) {
@@ -30,10 +37,17 @@ struct PanelHeader: View {
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(.primary)
             Spacer()
+            trailing
         }
         .padding(.horizontal, 10)
         .frame(height: Theme.headerHeight)
         .background(Theme.sidebarBg)
+    }
+}
+
+extension PanelHeader where Trailing == EmptyView {
+    init(title: String, iconName: String) {
+        self.init(title: title, iconName: iconName) { EmptyView() }
     }
 }
 
