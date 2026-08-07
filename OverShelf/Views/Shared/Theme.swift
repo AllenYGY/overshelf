@@ -40,7 +40,7 @@ struct PanelHeader<Trailing: View>: View {
             trailing
         }
         .padding(.leading, 10)
-        .padding(.trailing, 34)
+        .padding(.trailing, 8)
         .frame(height: Theme.headerHeight)
         .background(Theme.sidebarBg)
     }

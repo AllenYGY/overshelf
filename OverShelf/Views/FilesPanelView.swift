@@ -42,7 +42,8 @@ struct FilesPanelView: View {
                         .foregroundStyle(.red)
                 }
             }
-            .padding(.horizontal, 10)
+            .padding(.leading, 10)
+            .padding(.trailing, 32)
             .padding(.vertical, 5)
             .background(Theme.sidebarBg)
         }

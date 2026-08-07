@@ -103,16 +103,16 @@ struct MainContentView: View {
             }
         } label: {
             Image(systemName: "square.grid.2x2")
-                .font(.system(size: 13))
+                .font(.system(size: 11))
                 .foregroundStyle(.secondary)
-                .frame(width: 28, height: 28)
+                .frame(width: 20, height: 20)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
-        .background(Theme.sidebarBg)
         .help("Panels")
-        .padding(.top, 2)
-        .padding(.trailing, 2)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+        .padding(.trailing, 6)
+        .padding(.bottom, 10)
     }
 
     @ViewBuilder
