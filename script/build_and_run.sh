@@ -211,6 +211,20 @@ case "$MODE" in
       OverShelf/Services/PersistenceManager.swift \
       Tests/MigrationTests/main.swift
     "$DIST_DIR/MigrationTests"
+    echo "Running file grid layout test..."
+    compile_test "$DIST_DIR/FileGridLayoutTests" \
+      -target arm64-apple-macosx14.0 \
+      -sdk "$SDK_PATH" \
+      -I "$PATCHED_SWIFT" \
+      -L "$PATCHED_SWIFT" \
+      -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE" \
+      -swift-version 5 \
+      -framework CoreGraphics \
+      OverShelf/Models/FileGridLayout.swift \
+      Tests/FileGridLayoutTests/main.swift
+    "$DIST_DIR/FileGridLayoutTests"
+
+
     echo "Running app services test..."
     compile_test "$DIST_DIR/AppServicesTests" \
       -target arm64-apple-macosx14.0 \
