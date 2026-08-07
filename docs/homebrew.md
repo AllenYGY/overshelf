@@ -48,7 +48,7 @@ Update `Casks/overshelf.rb` in the existing `ALLENYGY/homebrew-tap` repository:
 ```ruby
 cask "overshelf" do
   version "1.1.1"
-  sha256 "01eaf22e2eba5836d558efa4c66cc7353e3575b2d88f0a386777285caa1283bf"
+  sha256 "4cd24f78466feb875a06e76aa74b0a2a1a0762274c8116e935e41fef1607d00a"
 
   url "https://github.com/ALLENYGY/overshelf/releases/download/v#{version}/OverShelf-#{version}.zip"
   name "OverShelf"
