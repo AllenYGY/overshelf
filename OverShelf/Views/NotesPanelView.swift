@@ -208,14 +208,6 @@ struct NotesPanelView: View {
         .buttonStyle(.plain)
     }
 
-    private func detachNotes() {
-        NotificationCenter.default.post(name: .detachPanel, object: nil, userInfo: ["panel": PanelType.notes])
-    }
-
-    private func reattachNotes() {
-        uiState.onReattachPanel?(.notes)
-    }
-
 }
 
 /// A single note row in the list.

@@ -109,16 +109,15 @@ guard files.stagedFiles.isEmpty else {
     fail("File staging did not remove file")
 }
 
-// Detached panels disappear from the main layout and can be reattached.
-let defaultOrder: [PanelType] = [.clipboard, .files, .notes, .todo]
+// Hidden panels disappear from the main layout.
+let defaultOrder: [PanelType] = [.clipboard, .files, .notes, .todo, .workspaces]
 let hidden: Set<PanelType> = [.todo]
-let detached: Set<PanelType> = [.files]
-let visible = AppSettings.visiblePanels(from: defaultOrder, hidden: hidden, detached: detached)
-guard visible == [.clipboard, .notes] else {
-    fail("Detached/hidden panels should be excluded from the main layout")
+let visible = AppSettings.visiblePanels(from: defaultOrder, hidden: hidden)
+guard visible == [.clipboard, .files, .notes, .workspaces] else {
+    fail("Hidden panels should be excluded from the main layout")
 }
-guard AppSettings.visiblePanels(from: defaultOrder, hidden: [], detached: []) == defaultOrder else {
-    fail("All panels should be visible when nothing is hidden or detached")
+guard AppSettings.visiblePanels(from: defaultOrder, hidden: []) == defaultOrder else {
+    fail("All panels should be visible when nothing is hidden")
 }
 
 // Clipboard history/favorites

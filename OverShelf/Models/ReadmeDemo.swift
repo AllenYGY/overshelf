@@ -5,6 +5,7 @@ enum ReadmeDemoScene: String, CaseIterable {
     case files
     case notes
     case todo
+    case workspaces
     case overview
 
 }
@@ -64,21 +65,19 @@ enum ReadmeDemoData {
         )
 
         let demoDirectory = URL(fileURLWithPath: "/tmp/OverShelf-ReadmeDemo", isDirectory: true)
-        persistence.save(
-            StagedFilesStore(files: [
-                StagedFile(
-                    name: "Launch-Brief.pdf",
-                    url: demoDirectory.appendingPathComponent("Launch-Brief.pdf"),
-                    timestamp: baseDate.addingTimeInterval(120)
-                ),
-                StagedFile(
-                    name: "App-Icon.sketch",
-                    url: demoDirectory.appendingPathComponent("App-Icon.sketch"),
-                    timestamp: baseDate.addingTimeInterval(60)
-                )
-            ]),
-            forKey: "staged_files"
-        )
+        let stagedFiles = [
+            StagedFile(
+                name: "Launch-Brief.pdf",
+                url: demoDirectory.appendingPathComponent("Launch-Brief.pdf"),
+                timestamp: baseDate.addingTimeInterval(120)
+            ),
+            StagedFile(
+                name: "App-Icon.sketch",
+                url: demoDirectory.appendingPathComponent("App-Icon.sketch"),
+                timestamp: baseDate.addingTimeInterval(60)
+            )
+        ]
+        persistence.save(StagedFilesStore(files: stagedFiles), forKey: "staged_files")
 
         let noteBody = """
         # Launch notes
@@ -87,45 +86,56 @@ enum ReadmeDemoData {
         - [ ] Publish the build
         - [ ] Update Homebrew
         """
-        persistence.save(
-            NotesStore(notes: [
-                Note(
-                    title: "Launch notes",
-                    body: noteBody,
-                    timestamp: baseDate,
-                    modifiedAt: baseDate.addingTimeInterval(180),
-                    pinned: true
-                )
-            ]),
-            forKey: "notes"
-        )
+        let demoNotes = [
+            Note(
+                title: "Launch notes",
+                body: noteBody,
+                timestamp: baseDate,
+                modifiedAt: baseDate.addingTimeInterval(180),
+                pinned: true
+            )
+        ]
+        persistence.save(NotesStore(notes: demoNotes), forKey: "notes")
+
+        let demoTodos = [
+            TodoItem(
+                title: "Polish the README",
+                priority: .high,
+                dueDate: baseDate.addingTimeInterval(2 * 86_400),
+                createdAt: baseDate,
+                modifiedAt: baseDate.addingTimeInterval(180)
+            ),
+            TodoItem(
+                title: "Publish the build",
+                priority: .medium,
+                dueDate: baseDate.addingTimeInterval(4 * 86_400),
+                createdAt: baseDate,
+                modifiedAt: baseDate.addingTimeInterval(120)
+            ),
+            TodoItem(
+                title: "Update Homebrew",
+                isCompleted: true,
+                priority: .low,
+                dueDate: baseDate.addingTimeInterval(6 * 86_400),
+                createdAt: baseDate,
+                modifiedAt: baseDate.addingTimeInterval(60)
+            )
+        ]
+        persistence.save(TodoStore(items: demoTodos), forKey: "todos")
 
         persistence.save(
-            TodoStore(items: [
-                TodoItem(
-                    title: "Polish the README",
-                    priority: .high,
-                    dueDate: baseDate.addingTimeInterval(2 * 86_400),
+            WorkspacesStore(workspaces: [
+                Workspace(
+                    title: "Launch",
                     createdAt: baseDate,
-                    modifiedAt: baseDate.addingTimeInterval(180)
-                ),
-                TodoItem(
-                    title: "Publish the build",
-                    priority: .medium,
-                    dueDate: baseDate.addingTimeInterval(4 * 86_400),
-                    createdAt: baseDate,
-                    modifiedAt: baseDate.addingTimeInterval(120)
-                ),
-                TodoItem(
-                    title: "Update Homebrew",
-                    isCompleted: true,
-                    priority: .low,
-                    dueDate: baseDate.addingTimeInterval(6 * 86_400),
-                    createdAt: baseDate,
-                    modifiedAt: baseDate.addingTimeInterval(60)
+                    modifiedAt: baseDate.addingTimeInterval(180),
+                    clipboardItemIDs: [clipboardItems[1].id],
+                    stagedFileIDs: [stagedFiles[0].id],
+                    noteIDs: [demoNotes[0].id],
+                    todoIDs: [demoTodos[0].id]
                 )
             ]),
-            forKey: "todos"
+            forKey: "workspaces"
         )
 
         _ = scene

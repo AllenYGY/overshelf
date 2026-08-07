@@ -7,10 +7,7 @@ final class UIState {
     var isWindowVisible: Bool = false
     /// The isolated README demo scene, when launched with a demo argument.
     var readmeDemoScene: ReadmeDemoScene?
-    var detachedPanels: Set<PanelType> = []
     var settingsVisible: Bool = false
-    var onDetachPanel: ((PanelType) -> Void)?
-    var onReattachPanel: ((PanelType) -> Void)?
     var onEdgeTriggerChange: ((Bool) -> Void)?
     var onDragToEdgeChange: ((Bool) -> Void)?
     var onHotkeyChange: ((UInt32, UInt32) -> Void)?
@@ -25,7 +22,7 @@ final class UIState {
 }
 
 /// Manages the dropdown panel window: creation, show/hide animation,
-/// edge-trigger coordination, and detached panel windows.
+/// and edge-trigger coordination.
 final class WindowManager {
     private var panel: DropDownPanel?
     
@@ -37,21 +34,22 @@ final class WindowManager {
     private let notes: NotesManager
     private let files: FileStagingManager
     private let todos: TodoManager
+    private let workspaces: WorkspaceManager
     private let settings: AppSettings
     private let persistence: PersistenceManager
 
-    private var detachedWindows: [PanelType: DetachedPanel] = [:]
     private var isAnimating = false
     private var animationTimer: Timer?
     private var revealView: PanelRevealView?
     private var revealState = PanelRevealState()
 
-    init(persistence: PersistenceManager, clipboard: ClipboardMonitor, notes: NotesManager, files: FileStagingManager, todos: TodoManager, settings: AppSettings) {
+    init(persistence: PersistenceManager, clipboard: ClipboardMonitor, notes: NotesManager, files: FileStagingManager, todos: TodoManager, workspaces: WorkspaceManager, settings: AppSettings) {
         self.persistence = persistence
         self.clipboard = clipboard
         self.notes = notes
         self.files = files
         self.todos = todos
+        self.workspaces = workspaces
         self.settings = settings
         self.uiState = UIState(
             readmeDemoScene: ReadmeDemoLaunchMode.parse(arguments: CommandLine.arguments).scene
@@ -77,6 +75,7 @@ final class WindowManager {
             .environment(notes)
             .environment(files)
             .environment(todos)
+            .environment(workspaces)
             .environment(settings)
             .environment(uiState)
 
@@ -235,63 +234,6 @@ final class WindowManager {
         return NSScreen.screens.first(where: { $0.frame.contains(mouse) }) ?? NSScreen.main
     }
 
-    // MARK: - Detached panels
-
-    func detachPanel(_ type: PanelType) {
-        guard detachedWindows[type] == nil else { return }
-        uiState.detachedPanels.insert(type)
-
-        let screen = NSScreen.main ?? NSScreen.screens.first!
-        let width: CGFloat = settings.panelWidths[type] ?? 260
-        let height: CGFloat = settings.windowHeight
-        let x = screen.frame.minX + 40 + CGFloat(detachedWindows.count * 30)
-        let y = screen.frame.maxY - height - 40
-
-        let detachedPanel = DetachedPanel(
-            contentRect: NSRect(x: x, y: y, width: width, height: height),
-            title: type.title
-        )
-        detachedPanel.onClose = { [weak self] in
-            self?.reattachPanel(type)
-        }
-
-       let content = panelContentView(for: type)
-            .environment(clipboard)
-            .environment(notes)
-            .environment(files)
-            .environment(todos)
-            .environment(settings)
-            .environment(uiState)
-
-       let controller = NSHostingController(rootView: AnyView(content))
-        detachedPanel.contentViewController = controller
-        detachedPanel.makeKeyAndOrderFront(nil)
-
-        detachedWindows[type] = detachedPanel
-    }
-
-    func reattachPanel(_ type: PanelType) {
-        if let window = detachedWindows[type] {
-            window.orderOut(nil)
-            detachedWindows[type] = nil
-        }
-        uiState.detachedPanels.remove(type)
-    }
-
-    @ViewBuilder
-    private func panelContentView(for type: PanelType) -> some View {
-        switch type {
-        case .clipboard:
-            ClipboardPanelView()
-        case .files:
-            FilesPanelView()
-        case .notes:
-            NotesPanelView()
-        case .todo:
-            TodoPanelView()
-        }
-    }
-
     // MARK: - Cleanup
 
     func teardown() {
@@ -300,10 +242,6 @@ final class WindowManager {
         edgeTracker.stop()
         hotkeyManager.unregister()
         clipboard.stop()
-        for window in detachedWindows.values {
-            window.orderOut(nil)
-        }
-        detachedWindows.removeAll()
         panel?.orderOut(nil)
     }
 }

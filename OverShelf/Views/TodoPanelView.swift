@@ -3,7 +3,6 @@ import SwiftUI
 /// The todo list panel: create, edit, complete, and filter tasks.
 struct TodoPanelView: View {
     @Environment(TodoManager.self) private var todos
-    @Environment(UIState.self) private var uiState
 
     @State private var searchText = ""
     @State private var newTodoTitle = ""
@@ -140,14 +139,6 @@ struct TodoPanelView: View {
         newTodoTitle = ""
     }
 
-    private func detachTodo() {
-        NotificationCenter.default.post(name: .detachPanel, object: nil, userInfo: ["panel": PanelType.todo])
-    }
-
-    private func reattachTodo() {
-        uiState.onReattachPanel?(.todo)
-    }
-
 }
 
 enum TodoFilter: String, CaseIterable, Identifiable {
@@ -275,27 +266,17 @@ struct TodoRow: View {
                     .buttonStyle(.plain)
                     .help("Set due date")
                     .popover(isPresented: $showDatePicker, arrowEdge: .top) {
-                        VStack(spacing: 8) {
-                            DatePicker(
-                                "Due",
-                                selection: Binding(
-                                    get: { item.dueDate ?? Date() },
-                                    set: { onUpdateDueDate($0) }
-                                ),
-                                displayedComponents: [.date]
-                            )
-                            .datePickerStyle(.graphical)
-                            .labelsHidden()
-                            if item.dueDate != nil {
-                                Button("Clear due date") {
-                                    onUpdateDueDate(nil)
-                                    showDatePicker = false
-                                }
-                                .font(.system(size: 11))
+                        DueDateCalendarView(
+                            selected: item.dueDate,
+                            onSelect: { date in
+                                onUpdateDueDate(date)
+                                showDatePicker = false
+                            },
+                            onClear: {
+                                onUpdateDueDate(nil)
+                                showDatePicker = false
                             }
-                        }
-                        .padding(10)
-                        .frame(width: 240)
+                        )
                     }
 
                     Button { onDelete() } label: {

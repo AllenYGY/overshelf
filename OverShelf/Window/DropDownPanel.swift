@@ -23,30 +23,3 @@ final class DropDownPanel: NSPanel {
         self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
     }
 }
-
-/// A floating panel for detached panels.
-final class DetachedPanel: NSPanel {
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { true }
-    var onClose: (() -> Void)?
-
-    init(contentRect: NSRect, title: String) {
-        super.init(
-            contentRect: contentRect,
-            styleMask: [.titled, .closable, .resizable],
-            backing: .buffered,
-            defer: false
-        )
-        self.title = title
-        self.isFloatingPanel = true
-        self.level = .floating
-        self.isReleasedWhenClosed = false
-        self.hidesOnDeactivate = false
-        self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-    }
-
-    override func close() {
-        onClose?()
-        super.close()
-    }
-}

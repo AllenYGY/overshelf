@@ -1,5 +1,9 @@
 # OverShelf
 
+<p align="center">
+  <img src="OverShelf/Assets.xcassets/AppIcon.appiconset/icon-256.png" width="128" alt="OverShelf 图标">
+</p>
+
 一个 macOS 上的「下拉抽屉」式效率工具：把剪贴板历史、文件暂存、快速笔记、待办
 事项收进同一个从屏幕顶部逐步展开的面板里。
 
@@ -25,6 +29,9 @@ SwiftUI 构建。
 - **待办**：轻量任务清单，支持搜索、筛选（全部 / 未完成 / 已完成）、优先级、截止日期、
   一键完成。
 
+Workspaces 是可选的第五个面板，用来把剪贴板、文件、笔记和待办中的已有条目集中到一个工作区。
+它默认隐藏，因此新安装仍然保持原来的四面板布局；需要时可在「偏好设置 > 面板」中开启。
+
 ### 唤出与收回
 
 | 触发方式 | 动作 |
@@ -47,7 +54,6 @@ SwiftUI 构建。
 
 - 拖动面板之间的分隔条可调整每个面板的宽度。
 - 在「偏好设置 > 面板」中拖拽重排面板顺序。
-- 可从面板管理菜单把任意面板分离成悬浮置顶窗口；关闭悬浮窗或使用菜单即可重新归位。
 - 可隐藏不常用的面板，在「偏好设置 > 面板」或菜单栏「面板」子菜单中恢复。
 
 ### 菜单栏
@@ -145,7 +151,7 @@ brew uninstall --cask --zap overshelf
 3. 复制内容、暂存文件、随手记笔记、跟踪任务。
 4. 点击面板外区域（或再按一次快捷键）收回面板。
 
-动效演示见下方，英文说明见 [README](README.md)。
+动效演示见上方，英文说明见 [README](README.md)。
 
 ---
 
@@ -154,7 +160,7 @@ brew uninstall --cask --zap overshelf
 ```txt
 OverShelf/
   App/            # 应用入口、AppDelegate、菜单栏菜单
-  Models/         # AppSettings, ClipboardItem, Note, StagedFile, TodoItem
+  Models/         # AppSettings, ClipboardItem, Note, StagedFile, TodoItem, Workspace
   Services/       # PersistenceManager, ClipboardMonitor, NotesManager 等
   Views/          # 各面板视图、设置、共享 Markdown 预览与主题
   Window/         # DropDownPanel, WindowManager, TopEdgeTracker, 快捷键

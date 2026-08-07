@@ -1,5 +1,9 @@
 # OverShelf
 
+<p align="center">
+  <img src="OverShelf/Assets.xcassets/AppIcon.appiconset/icon-256.png" width="128" alt="OverShelf icon">
+</p>
+
 A macOS dropdown-drawer app that puts clipboard history, file staging, quick
 notes, and todos behind one panel that reveals from the top of your screen.
 
@@ -31,6 +35,11 @@ desktop clutter. Built with Swift and SwiftUI.
 - **Todo** - lightweight task list with search, filters (all / active /
   completed), priorities, due dates, and one-click completion.
 
+Workspaces is an optional fifth panel for pinning references to existing items
+across Clipboard, Files, Notes, and Todo. It stays hidden by default so new
+installs keep the original four-panel layout. Enable it from **Preferences >
+Panels** when you want it.
+
 ### Summon and dismiss
 
 | Trigger | Action |
@@ -54,8 +63,6 @@ its final size while it is revealed, avoiding the heavy full-window slide.
 
 - Drag the dividers between panels to resize each one.
 - Reorder panels in **Preferences > Panels**.
-- Detach any panel from the panel-manager menu into its own floating,
-  always-on-top window; close that window or use the menu to reattach it.
 - Hide panels you don't use and restore them from **Preferences > Panels** or
   the menu bar **Panels** submenu.
 
@@ -161,25 +168,8 @@ First launch notes:
 3. Copy things, shelve files, jot notes, track tasks.
 4. Click outside the panel (or press the hotkey again) to fold it away.
 
-See the demo below, and the [Chinese readme](README.zh-CN.md) for a
+See the animation above, and the [Chinese readme](README.zh-CN.md) for a
 localized guide.
-
----
-
-## Demo
-
-![OverShelf top-edge reveal](docs/screenshots/overshelf-reveal.gif)
-
-Regenerate the animation from real application frames with Homebrew `ffmpeg`:
-
-```bash
-brew install ffmpeg
-./script/capture_demo.sh
-```
-
-Grant **Screen Recording** permission to your terminal before running the
-script. Static PNG captures can still be generated with
-`script/capture_screenshots.sh`.
 
 ---
 
@@ -188,7 +178,7 @@ script. Static PNG captures can still be generated with
 ```txt
 OverShelf/
   App/            # App entry, AppDelegate, status bar menu
-  Models/         # AppSettings, ClipboardItem, Note, StagedFile, TodoItem
+  Models/         # AppSettings, ClipboardItem, Note, StagedFile, TodoItem, Workspace
   Services/       # PersistenceManager, ClipboardMonitor, NotesManager, ...
   Views/          # Panel views, Settings, shared Markdown preview + theme
   Window/         # DropDownPanel, WindowManager, TopEdgeTracker, hotkeys

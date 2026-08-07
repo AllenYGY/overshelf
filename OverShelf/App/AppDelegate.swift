@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let files: FileStagingManager
     let settings: AppSettings
     let todos: TodoManager
+    let workspaces: WorkspaceManager
     let windowManager: WindowManager
     private let readmeDemoLaunchMode: ReadmeDemoLaunchMode
     private let settingsWindowController = SettingsWindowController()
@@ -33,12 +34,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.files = FileStagingManager(persistence: persistence)
         self.settings = AppSettings(persistence: persistence)
         self.todos = TodoManager(persistence: persistence)
+        self.workspaces = WorkspaceManager(persistence: persistence)
         self.windowManager = WindowManager(
             persistence: persistence,
             clipboard: clipboard,
             notes: notes,
             files: files,
             todos: todos,
+            workspaces: workspaces,
             settings: settings
         )
         super.init()
@@ -47,8 +50,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Wire up UIState callbacks
         let uiState = windowManager.uiState
-        uiState.onDetachPanel = { [weak self] panel in self?.windowManager.detachPanel(panel) }
-        uiState.onReattachPanel = { [weak self] panel in self?.windowManager.reattachPanel(panel) }
         uiState.onEdgeTriggerChange = { [weak self] enabled in self?.windowManager.updateEdgeTrigger(enabled: enabled) }
         uiState.onDragToEdgeChange = { [weak self] enabled in self?.windowManager.updateDragToEdge(enabled: enabled) }
         uiState.onHotkeyChange = { [weak self] code, mods in self?.windowManager.updateHotkey(keyCode: code, modifiers: mods) }
@@ -65,7 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Cmd+, opens preferences whenever the app owns the key window
-        // (dropdown panel, detached panel, or the settings window itself).
+        // (the dropdown panel or the settings window itself).
         settingsMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             let mods = event.modifierFlags.intersection([.command, .shift, .option, .control])
             if mods == [.command], event.charactersIgnoringModifiers == "," {
@@ -74,23 +75,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return event
         }
-
-
-        // Listen for detach notifications from SwiftUI views
-        NotificationCenter.default.addObserver(
-            forName: .windowDetach,
-            object: nil,
-            queue: .main
-        ) { [weak self] note in
-            if let panel = note.userInfo?["panel"] as? PanelType {
-                self?.windowManager.detachPanel(panel)
-            }
-        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         notes.flush()
         todos.flush()
+        workspaces.flush()
         if let m = settingsMonitor { NSEvent.removeMonitor(m) }
         windowManager.teardown()
     }

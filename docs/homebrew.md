@@ -20,25 +20,25 @@ brew install --cask overshelf
 ./script/build_and_run.sh build
 cd dist
 xattr -cr OverShelf.app
-COPYFILE_DISABLE=1 zip -qry -X OverShelf-1.1.0.zip OverShelf.app
-shasum -a 256 OverShelf-1.1.0.zip   # copy this hash into the cask
+COPYFILE_DISABLE=1 zip -qry -X OverShelf-1.1.1.zip OverShelf.app
+shasum -a 256 OverShelf-1.1.1.zip   # copy this hash into the cask
 ```
 
 ## 3. Tag and publish a release / 打 tag 并发布 Release
 
 ```bash
-git tag v1.1.0
-git push origin v1.1.0
-# Upload OverShelf-1.1.0.zip as a release asset on the GitHub release page,
+git tag v1.1.1
+git push origin v1.1.1
+# Upload OverShelf-1.1.1.zip as a release asset on the GitHub release page,
 # or use gh:
-gh release create v1.1.0 dist/OverShelf-1.1.0.zip \
-  --title "OverShelf 1.1.0" --generate-notes
+gh release create v1.1.1 dist/OverShelf-1.1.1.zip \
+  --title "OverShelf 1.1.1" --generate-notes
 ```
 
 The downloadable URL will look like:
 
 ```
-https://github.com/ALLENYGY/overshelf/releases/download/v1.1.0/OverShelf-1.1.0.zip
+https://github.com/ALLENYGY/overshelf/releases/download/v1.1.1/OverShelf-1.1.1.zip
 ```
 
 ## 4. Update the Homebrew tap / 更新 Homebrew tap
@@ -47,8 +47,8 @@ Update `Casks/overshelf.rb` in the existing `ALLENYGY/homebrew-tap` repository:
 
 ```ruby
 cask "overshelf" do
-  version "1.1.0"
-  sha256 "3d554a4e219d94606fb993adedbe8923a7ac1d44e8576349e552d2812d16fe56"
+  version "1.1.1"
+  sha256 "01eaf22e2eba5836d558efa4c66cc7353e3575b2d88f0a386777285caa1283bf"
 
   url "https://github.com/ALLENYGY/overshelf/releases/download/v#{version}/OverShelf-#{version}.zip"
   name "OverShelf"

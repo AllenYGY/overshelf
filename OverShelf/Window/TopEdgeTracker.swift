@@ -144,8 +144,8 @@ final class TopEdgeTracker {
     }
 
     /// True when the point is inside any visible window belonging to this app
-    /// (popovers, detached panels, settings). Used so interacting with our own
-    /// auxiliary windows doesn't auto-hide the panel.
+    /// (popovers, settings). Used so interacting with our own auxiliary
+    /// windows doesn't auto-hide the panel.
     static func isInsideOwnWindow(at point: NSPoint) -> Bool {
         NSApp.windows.contains { $0.isVisible && $0.frame.contains(point) }
     }

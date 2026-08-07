@@ -3,7 +3,6 @@ import SwiftUI
 /// The file staging panel: drag files in, drag them out to any app or Finder.
 struct FilesPanelView: View {
     @Environment(FileStagingManager.self) private var files
-    @Environment(UIState.self) private var uiState
 
     @State private var isDropTargeted = false
     @State private var hoveredFile: UUID?
@@ -99,14 +98,6 @@ struct FilesPanelView: View {
     private func revealFile(_ file: StagedFile) {
         guard let url = files.resolveURL(for: file) else { return }
         NSWorkspace.shared.activateFileViewerSelecting([url])
-    }
-
-    private func detachFiles() {
-        NotificationCenter.default.post(name: .detachPanel, object: nil, userInfo: ["panel": PanelType.files])
-    }
-
-    private func reattachFiles() {
-        uiState.onReattachPanel?(.files)
     }
 
 }

@@ -32,6 +32,7 @@ enum PanelType: String, Codable, CaseIterable, Identifiable {
     case files
     case notes
     case todo
+    case workspaces
 
     var id: String { rawValue }
 
@@ -41,6 +42,7 @@ enum PanelType: String, Codable, CaseIterable, Identifiable {
         case .files: return "Files"
         case .notes: return "Notes"
         case .todo: return "Todo"
+        case .workspaces: return "Workspaces"
         }
     }
 
@@ -50,15 +52,16 @@ enum PanelType: String, Codable, CaseIterable, Identifiable {
         case .files: return "tray.full"
         case .notes: return "note.text"
         case .todo: return "checklist"
+        case .workspaces: return "pin.square"
         }
     }
 }
 
 /// Persisted app-level settings.
 struct AppSettingsData: Codable {
-    var panelOrder: [PanelType] = [.clipboard, .files, .notes, .todo]
-    var panelWidths: [PanelType: CGFloat] = [.clipboard: 260, .files: 240, .notes: 280, .todo: 260]
-    var hiddenPanels: Set<PanelType> = []
+    var panelOrder: [PanelType] = [.clipboard, .files, .notes, .todo, .workspaces]
+    var panelWidths: [PanelType: CGFloat] = [.clipboard: 260, .files: 240, .notes: 280, .todo: 260, .workspaces: 280]
+    var hiddenPanels: Set<PanelType> = [.workspaces]
     var windowOpacity: Double = 1.0
     var windowHeight: CGFloat = 420
     var appearanceMode: AppearanceMode? = .system
@@ -146,14 +149,18 @@ final class AppSettings {
         data.panelOrder.filter { !data.hiddenPanels.contains($0) }
     }
 
-    static func visiblePanels(from order: [PanelType], hidden: Set<PanelType>, detached: Set<PanelType>) -> [PanelType] {
-        order.filter { !hidden.contains($0) && !detached.contains($0) }
+    static func visiblePanels(from order: [PanelType], hidden: Set<PanelType>) -> [PanelType] {
+        order.filter { !hidden.contains($0) }
     }
 
     private func migrateIfNeeded() {
         var changed = false
         if data.appearanceMode == nil {
             data.appearanceMode = .system
+            changed = true
+        }
+        if !data.panelOrder.contains(.workspaces) {
+            data.hiddenPanels.insert(.workspaces)
             changed = true
         }
         for panel in PanelType.allCases {
@@ -177,6 +184,7 @@ final class AppSettings {
         case .files: return 240
         case .notes: return 280
         case .todo: return 260
+        case .workspaces: return 280
         }
     }
 

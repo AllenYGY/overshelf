@@ -96,4 +96,14 @@ guard let todos = persistence.load(TodoStore.self, forKey: "todos"),
     fail("seeded todos did not match the fixture")
 }
 
+guard let workspaces = persistence.load(WorkspacesStore.self, forKey: "workspaces"),
+      workspaces.workspaces.count == 1,
+      workspaces.workspaces[0].title == "Launch",
+      workspaces.workspaces[0].clipboardItemIDs == [clipboard.items[1].id],
+      workspaces.workspaces[0].stagedFileIDs == [files.files[0].id],
+      workspaces.workspaces[0].noteIDs == [notes.notes[0].id],
+      workspaces.workspaces[0].todoIDs == [todos.items[0].id] else {
+    fail("seeded workspace should reference one item from each panel")
+}
+
 print("Readme demo tests passed")

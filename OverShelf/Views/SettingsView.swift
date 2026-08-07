@@ -117,10 +117,6 @@ struct SettingsView: View {
                 }
                 Button("Restore all panels") {
                     settings.hiddenPanels = []
-                    let detached = Array(uiState.detachedPanels)
-                    for panel in detached {
-                        uiState.onReattachPanel?(panel)
-                    }
                 }
             }
         }

@@ -31,14 +31,24 @@ guard settings.panelOrder.contains(.todo) else {
     fatalError("migration did not add Todo panel")
 }
 
-guard settings.visiblePanels.count == 4, settings.visiblePanels.contains(.todo) else {
-    fatalError("migration did not make all four panels visible")
+guard settings.panelOrder.contains(.workspaces) else {
+    fatalError("migration did not add the Workspaces panel")
+}
+
+guard settings.panelWidths[.workspaces] != nil else {
+    fatalError("migration did not assign a default Workspaces panel width")
+}
+
+guard settings.visiblePanels == [.clipboard, .files, .notes, .todo],
+      settings.hiddenPanels.contains(.workspaces) else {
+    fatalError("migration should preserve the four-panel default and keep Workspaces opt-in")
 }
 
 guard let data = try? Data(contentsOf: settingsURL),
       let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
       let order = obj["panelOrder"] as? [String],
       order.contains("todo"),
+      order.contains("workspaces"),
       obj["appearanceMode"] as? String == "system" else {
     fatalError("migration did not persist Todo panel")
 }
@@ -62,9 +72,19 @@ guard settings.visiblePanels.contains(.todo) else {
     fatalError("hidden panel should be restorable through visiblePanels")
 }
 
-settings.panelOrder = [.todo, .clipboard, .files, .notes]
+settings.panelOrder = [.todo, .clipboard, .files, .notes, .workspaces]
 guard settings.visiblePanels == [.todo, .clipboard, .files, .notes] else {
-    fatalError("panel reorder did not persist through visiblePanels")
+    fatalError("panel reorder should preserve the hidden Workspaces preference")
+}
+
+hidden = settings.hiddenPanels
+hidden.remove(.workspaces)
+settings.hiddenPanels = hidden
+guard settings.visiblePanels == [.todo, .clipboard, .files, .notes, .workspaces] else {
+    fatalError("Workspaces should become visible when the user enables it")
+}
+guard !AppSettings(persistence: persistence).hiddenPanels.contains(.workspaces) else {
+    fatalError("the user's Workspaces visibility choice should persist")
 }
 
 let newSettingsDir = FileManager.default.temporaryDirectory
@@ -73,6 +93,13 @@ try? FileManager.default.createDirectory(at: newSettingsDir, withIntermediateDir
 let newSettings = AppSettings(persistence: PersistenceManager(baseURL: newSettingsDir))
 guard newSettings.windowOpacity == 1 else {
     fatalError("new settings should default to a fully opaque window")
+}
+guard newSettings.panelOrder == [.clipboard, .files, .notes, .todo, .workspaces] else {
+    fatalError("new settings should include the Workspaces panel in the default order")
+}
+guard newSettings.visiblePanels == [.clipboard, .files, .notes, .todo],
+      newSettings.hiddenPanels == [.workspaces] else {
+    fatalError("new settings should default to the original four visible panels")
 }
 
 print("Migration test passed: \(settings.panelOrder.map(\.rawValue).joined(separator: ", "))")

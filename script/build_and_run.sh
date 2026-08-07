@@ -220,6 +220,47 @@ case "$MODE" in
       OverShelf/Services/ClipboardMonitor.swift \
       Tests/AppServicesTests/main.swift
     "$DIST_DIR/AppServicesTests"
+    echo "Running workspace test..."
+    compile_test "$DIST_DIR/WorkspaceTests" \
+      -target arm64-apple-macosx14.0 \
+      -sdk "$SDK_PATH" \
+      -I "$PATCHED_SWIFT" \
+      -L "$PATCHED_SWIFT" \
+      -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE" \
+      -swift-version 5 \
+      -framework Cocoa \
+      OverShelf/Models/Workspace.swift \
+      OverShelf/Services/PersistenceManager.swift \
+      OverShelf/Services/WorkspaceManager.swift \
+      Tests/WorkspaceTests/main.swift
+    "$DIST_DIR/WorkspaceTests"
+    echo "Running month calendar test..."
+    compile_test "$DIST_DIR/MonthCalendarTests" \
+      -target arm64-apple-macosx14.0 \
+      -sdk "$SDK_PATH" \
+      -I "$PATCHED_SWIFT" \
+      -L "$PATCHED_SWIFT" \
+      -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE" \
+      -swift-version 5 \
+      -framework Foundation \
+      OverShelf/Models/MonthCalendar.swift \
+      Tests/MonthCalendarTests/main.swift
+    "$DIST_DIR/MonthCalendarTests"
+    echo "Running panel layout test..."
+    compile_test "$DIST_DIR/PanelLayoutTests" \
+      -target arm64-apple-macosx14.0 \
+      -sdk "$SDK_PATH" \
+      -I "$PATCHED_SWIFT" \
+      -L "$PATCHED_SWIFT" \
+      -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE" \
+      -swift-version 5 \
+      -framework Cocoa \
+      -framework SwiftUI \
+      OverShelf/Models/AppSettings.swift \
+      OverShelf/Models/PanelLayout.swift \
+      OverShelf/Services/PersistenceManager.swift \
+      Tests/PanelLayoutTests/main.swift
+    "$DIST_DIR/PanelLayoutTests"
     echo "Running README demo test..."
     compile_test "$DIST_DIR/ReadmeDemoTests" \
       -target arm64-apple-macosx14.0 \
@@ -233,6 +274,7 @@ case "$MODE" in
       OverShelf/Models/Note.swift \
       OverShelf/Models/StagedFile.swift \
       OverShelf/Models/TodoItem.swift \
+      OverShelf/Models/Workspace.swift \
       OverShelf/Models/ReadmeDemo.swift \
       OverShelf/Services/PersistenceManager.swift \
       Tests/ReadmeDemoTests/main.swift
