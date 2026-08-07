@@ -85,6 +85,12 @@ struct MainContentView: View {
     @ViewBuilder
     private func panelManager() -> some View {
         Menu {
+            Button {
+                equalizePanelWidths()
+            } label: {
+                Label("Equalize Widths", systemImage: "rectangle.split.3x1")
+            }
+            Divider()
             ForEach(settings.panelOrder) { panel in
                 let visible = !settings.hiddenPanels.contains(panel)
                 Button {
@@ -124,6 +130,17 @@ struct MainContentView: View {
         case .todo: TodoPanelView()
         case .workspaces: WorkspacesPanelView()
         }
+    }
+
+    private func equalizePanelWidths() {
+        let visible = visiblePanels
+        guard !visible.isEmpty else { return }
+        let average = visible.map { settings.panelWidths[$0] ?? 250 }.reduce(0, +) / CGFloat(visible.count)
+        var widths = settings.panelWidths
+        for panel in visible {
+            widths[panel] = average
+        }
+        settings.panelWidths = widths
     }
 
     private func adjustWidth(left: PanelType, right: PanelType, delta: CGFloat) {

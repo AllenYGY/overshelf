@@ -46,4 +46,16 @@ guard clamped[.clipboard] == 160, clamped[.files] == 160 else {
     fail("panel widths should never drop below the minimum width")
 }
 
+// Equal preferred widths render as exactly equal panel widths.
+let equalized = PanelLayout.widths(
+    for: [.clipboard, .files, .notes, .todo],
+    preferred: [.clipboard: 250, .files: 250, .notes: 250, .todo: 250],
+    totalWidth: 980,
+    minWidth: 160
+)
+let equalWidths: [CGFloat] = [.clipboard, .files, .notes, .todo].map { equalized[$0] ?? 0 }
+guard equalWidths.allSatisfy({ abs($0 - 245) < 0.5 }) else {
+    fail("equal preferred widths should produce equal panel widths")
+}
+
 print("Panel layout tests passed")
