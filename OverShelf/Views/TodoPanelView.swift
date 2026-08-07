@@ -79,13 +79,18 @@ struct TodoPanelView: View {
                         Button {
                             filter = f
                         } label: {
-                            Text(f.displayName)
-                                .font(.system(size: 11))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .foregroundStyle(filter == f ? Color.white : .primary)
-                                .background(filter == f ? Color.accentColor : Color.clear)
-                                .cornerRadius(4)
+                            HStack(spacing: 2) {
+                                Text(f.displayName)
+                                Text("(\(count(for: f)))")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(filter == f ? Color.white.opacity(0.8) : Color.secondary)
+                            }
+                            .font(.system(size: 11))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .foregroundStyle(filter == f ? Color.white : .primary)
+                            .background(filter == f ? Color.accentColor : Color.clear)
+                            .cornerRadius(4)
                         }
                         .buttonStyle(.plain)
                         if f != TodoFilter.allCases.last {
@@ -106,13 +111,19 @@ struct TodoPanelView: View {
 
                 // Todo list
                 if draft == nil && displayedItems.isEmpty {
-                    VStack(spacing: 6) {
+                    VStack(spacing: 8) {
                         Image(systemName: "checklist")
                             .font(.system(size: 28))
                             .foregroundStyle(.tertiary)
                         Text(searchText.isEmpty ? "No tasks yet" : "No matches")
                             .font(.system(size: 12))
                             .foregroundStyle(.tertiary)
+                        if searchText.isEmpty {
+                            Button("Add first task") { beginDraft() }
+                                .font(.system(size: 11))
+                                .buttonStyle(.plain)
+                                .foregroundStyle(Color.accentColor)
+                        }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -157,6 +168,14 @@ struct TodoPanelView: View {
         .background(Theme.panelBg)
     }
 
+    private func count(for filter: TodoFilter) -> Int {
+        switch filter {
+        case .all: return todos.items.count
+        case .active: return todos.items.filter { !$0.isCompleted }.count
+        case .completed: return todos.items.filter { $0.isCompleted }.count
+        }
+    }
+
     private func beginDraft() {
         if draft == nil {
             draft = TodoDraft()
@@ -164,7 +183,7 @@ struct TodoPanelView: View {
         draftFocusRequest += 1
     }
 
-    private func submitDraft() {
+    private func submitDraft(addAnother: Bool = false) {
         guard let currentDraft = draft else { return }
         let title = currentDraft.title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
@@ -173,7 +192,12 @@ struct TodoPanelView: View {
             priority: currentDraft.priority,
             dueDate: currentDraft.dueDate
         )
-        draft = nil
+        if addAnother {
+            draft = TodoDraft()
+            draftFocusRequest += 1
+        } else {
+            draft = nil
+        }
     }
 }
 
@@ -183,7 +207,7 @@ struct TodoDraftRow: View {
     @Binding var priority: TodoItem.Priority
     @Binding var dueDate: Date?
     let focusRequest: Int
-    let onSubmit: () -> Void
+    let onSubmit: (Bool) -> Void
     let onCancel: () -> Void
 
     @FocusState private var isTitleFocused: Bool
@@ -201,7 +225,7 @@ struct TodoDraftRow: View {
                     .textFieldStyle(.plain)
                     .font(.system(size: 12))
                     .focused($isTitleFocused)
-                    .onSubmit(onSubmit)
+                    .onSubmit { onSubmit(false) }
                     .onExitCommand(perform: onCancel)
 
                 HStack(spacing: 6) {
@@ -212,7 +236,7 @@ struct TodoDraftRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: 4) {
-                Button(action: onSubmit) {
+                Button { onSubmit(false) } label: {
                     Image(systemName: "checkmark")
                         .font(.system(size: 10))
                         .foregroundStyle(canSubmit ? .green : .secondary)
@@ -220,6 +244,16 @@ struct TodoDraftRow: View {
                 .buttonStyle(.plain)
                 .disabled(!canSubmit)
                 .help("Add task")
+
+                Button { onSubmit(true) } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 10))
+                        .foregroundStyle(canSubmit ? Color.accentColor : .secondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSubmit)
+                .keyboardShortcut(.return, modifiers: .command)
+                .help("Add and create another")
 
                 Button(action: onCancel) {
                     Image(systemName: "xmark")
@@ -241,52 +275,80 @@ struct TodoDraftRow: View {
     }
 
     private var priorityControl: some View {
-        Menu {
+        HStack(spacing: 4) {
             ForEach(TodoItem.Priority.allCases) { p in
-                Button(p.displayName) { priority = p }
-            }
-        } label: {
-            HStack(spacing: 2) {
-                Circle()
-                    .fill(priority.swiftUIColor)
-                    .frame(width: 6, height: 6)
-                Text(priority.displayName)
-                    .font(.system(size: 9))
+                Button {
+                    priority = p
+                } label: {
+                    HStack(spacing: 3) {
+                        Circle()
+                            .fill(p.swiftUIColor)
+                            .frame(width: 6, height: 6)
+                        Text(p.displayName.prefix(1))
+                            .font(.system(size: 9, weight: .medium))
+                    }
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(priority == p ? Theme.rowHover : Color.clear)
+                    .cornerRadius(4)
+                }
+                .buttonStyle(.plain)
             }
         }
-        .menuStyle(.borderlessButton)
-        .frame(height: 14)
     }
 
     private var dueDateControl: some View {
-        Button { showDatePicker.toggle() } label: {
-            HStack(spacing: 2) {
-                Image(systemName: "calendar")
+        HStack(spacing: 4) {
+            dateChip("Today", date: Date())
+            dateChip("Tomorrow", date: Date().addingTimeInterval(86400))
+            dateChip("+1 Week", date: Date().addingTimeInterval(7 * 86400))
+            Button { showDatePicker.toggle() } label: {
+                Text("Custom")
                     .font(.system(size: 9))
-                if let date = dueDate {
-                    Text(date, style: .date)
-                        .font(.system(size: 9))
-                } else {
-                    Text("No date")
-                        .font(.system(size: 9))
-                }
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(isCustomDate ? Theme.rowHover : Color.clear)
+                    .cornerRadius(4)
             }
-            .foregroundStyle(dueDate == nil ? .secondary : Color.accentColor)
+            .buttonStyle(.plain)
+            .popover(isPresented: $showDatePicker, arrowEdge: .top) {
+                DueDateCalendarView(
+                    selected: dueDate,
+                    onSelect: { date in
+                        dueDate = date
+                        showDatePicker = false
+                    },
+                    onClear: {
+                        dueDate = nil
+                        showDatePicker = false
+                    }
+                )
+            }
+        }
+    }
+
+    private func dateChip(_ label: String, date: Date) -> some View {
+        Button { dueDate = date } label: {
+            Text(label)
+                .font(.system(size: 9))
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(isSameDay(dueDate, date) ? Theme.rowHover : Color.clear)
+                .cornerRadius(4)
         }
         .buttonStyle(.plain)
-        .popover(isPresented: $showDatePicker, arrowEdge: .top) {
-            DueDateCalendarView(
-                selected: dueDate,
-                onSelect: { date in
-                    dueDate = date
-                    showDatePicker = false
-                },
-                onClear: {
-                    dueDate = nil
-                    showDatePicker = false
-                }
-            )
-        }
+    }
+
+    private var isCustomDate: Bool {
+        guard let d = dueDate else { return false }
+        return !isSameDay(d, Date())
+            && !isSameDay(d, Date().addingTimeInterval(86400))
+            && !isSameDay(d, Date().addingTimeInterval(7 * 86400))
+    }
+
+    private func isSameDay(_ a: Date?, _ b: Date) -> Bool {
+        guard let a = a else { return false }
+        return Calendar.current.isDate(a, inSameDayAs: b)
     }
 }
 
@@ -374,7 +436,7 @@ struct TodoRow: View {
                     } label: {
                         HStack(spacing: 2) {
                             Circle()
-                                .fill(priorityColor(item.priority))
+                                .fill(item.priority.swiftUIColor)
                                 .frame(width: 6, height: 6)
                             Text(item.priority.rawValue.capitalized)
                                 .font(.system(size: 9))
@@ -383,10 +445,10 @@ struct TodoRow: View {
                     .menuStyle(.borderlessButton)
                     .frame(height: 14)
 
-                    if let due = item.dueDate {
-                        Text(due, style: .date)
+                    if let label = relativeDueDate {
+                        Text(label)
                             .font(.system(size: 9))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(isOverdue ? Color.red : Color.secondary)
                     }
                 }
             }
@@ -394,18 +456,6 @@ struct TodoRow: View {
 
             if isHovered || isEditing || showDatePicker {
                 HStack(spacing: 6) {
-                    Button {
-                        editText = item.title
-                        isEditing = true
-                        isTextFieldFocused = true
-                    } label: {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Rename task")
-
                     Button {
                         showDatePicker.toggle()
                     } label: {
@@ -465,11 +515,19 @@ struct TodoRow: View {
         }
     }
 
-    private func priorityColor(_ priority: TodoItem.Priority) -> Color {
-        switch priority {
-        case .low: return .gray
-        case .medium: return .orange
-        case .high: return .red
-        }
+    private var relativeDueDate: String? {
+        guard let due = item.dueDate else { return nil }
+        let cal = Calendar.current
+        if cal.isDateInToday(due) { return "Today" }
+        if cal.isDateInTomorrow(due) { return "Tomorrow" }
+        if cal.isDateInYesterday(due) { return "Yesterday" }
+        let days = cal.dateComponents([.day], from: cal.startOfDay(for: Date()), to: cal.startOfDay(for: due)).day ?? 0
+        if days > 0 { return "In \(days) days" }
+        return "Overdue by \(-days) days"
+    }
+
+    private var isOverdue: Bool {
+        guard let due = item.dueDate else { return false }
+        return due < Date() && !item.isCompleted
     }
 }
