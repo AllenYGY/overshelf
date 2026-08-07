@@ -88,6 +88,67 @@ guard TodoManager(persistence: persistence).items.isEmpty else {
     fail("Todo delete did not persist")
 }
 
+
+// Todo ordering and atomic metadata creation
+let todoSortDir = tempDir.appendingPathComponent("todo-sorting")
+try? FileManager.default.createDirectory(at: todoSortDir, withIntermediateDirectories: true)
+let sortedTodos = TodoManager(persistence: PersistenceManager(baseURL: todoSortDir))
+
+let now = Date()
+let yesterday = now.addingTimeInterval(-86400)
+let tomorrow = now.addingTimeInterval(86400)
+
+let created = sortedTodos.createTodo(title: "Urgent", priority: .high, dueDate: tomorrow)
+guard created.title == "Urgent", created.priority == .high, created.dueDate == tomorrow else {
+    fail("Todo creation should apply title, priority, and due date atomically")
+}
+
+let highYesterday = sortedTodos.createTodo(title: "High yesterday", priority: .high, dueDate: yesterday)
+let highUndated = sortedTodos.createTodo(title: "High undated", priority: .high, dueDate: nil)
+let mediumToday = sortedTodos.createTodo(title: "Medium today", priority: .medium, dueDate: now)
+let completedHigh = sortedTodos.createTodo(title: "Completed high", priority: .high, dueDate: yesterday)
+sortedTodos.toggleCompletion(id: completedHigh.id)
+
+let expectedOrder: [UUID] = [highYesterday.id, created.id, highUndated.id, mediumToday.id, completedHigh.id]
+guard sortedTodos.items.map(\.id) == expectedOrder else {
+    fail("Todo sort order should be: incomplete high by date, then undated high, then medium, then completed")
+}
+sortedTodos.flush()
+let reloadedSortedTodos = TodoManager(persistence: PersistenceManager(baseURL: todoSortDir))
+guard reloadedSortedTodos.items.map(\.id) == expectedOrder else {
+    fail("Todo sort order should survive reload")
+}
+
+// Mutation order updates
+let lowToday = sortedTodos.createTodo(title: "Low today", priority: .low, dueDate: now)
+sortedTodos.updatePriority(id: lowToday.id, priority: .high)
+sortedTodos.updateDueDate(id: lowToday.id, dueDate: now.addingTimeInterval(-2 * 86400))
+// lowToday becomes high with the earliest due date -> first
+var currentOrder = sortedTodos.items.map(\.id)
+guard currentOrder.first == lowToday.id else {
+    fail("Raising priority and moving due date earlier should move task to the front")
+}
+sortedTodos.toggleCompletion(id: lowToday.id)
+currentOrder = sortedTodos.items.map(\.id)
+guard let lowIndex = currentOrder.firstIndex(of: lowToday.id),
+      let mediumTodayIndex = currentOrder.firstIndex(of: mediumToday.id),
+      lowIndex > mediumTodayIndex else {
+    fail("Completing the front task should move it behind every incomplete task")
+}
+
+let mediumTomorrow = sortedTodos.createTodo(title: "Medium tomorrow", priority: .medium, dueDate: tomorrow)
+sortedTodos.updateDueDate(id: mediumTomorrow.id, dueDate: nil)
+currentOrder = sortedTodos.items.map(\.id)
+let mediumIndex = currentOrder.firstIndex(of: mediumTomorrow.id) ?? -1
+let mediumTodayIndex = currentOrder.firstIndex(of: mediumToday.id) ?? -2
+// nil due date should place it after the other dated medium task, so it should appear after mediumToday
+if currentOrder.contains(mediumToday.id) && currentOrder.contains(mediumTomorrow.id) {
+    guard mediumIndex > mediumTodayIndex else {
+        fail("Clearing a due date should move the task behind dated peers of the same priority")
+    }
+}
+
+
 // File staging keeps references, not copies
 let fileURL = tempDir.appendingPathComponent("sample-\(UUID().uuidString).txt")
 try? "hello".data(using: .utf8)?.write(to: fileURL)

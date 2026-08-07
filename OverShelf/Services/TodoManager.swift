@@ -14,9 +14,14 @@ final class TodoManager {
     }
 
     @discardableResult
-    func createTodo(title: String = "") -> TodoItem {
-        let todo = TodoItem(title: title)
-        items.insert(todo, at: 0)
+    func createTodo(
+        title: String = "",
+        priority: TodoItem.Priority = .medium,
+        dueDate: Date? = nil
+    ) -> TodoItem {
+        let todo = TodoItem(title: title, priority: priority, dueDate: dueDate)
+        items.append(todo)
+        sortItems()
         scheduleSave()
         return todo
     }
@@ -86,7 +91,17 @@ final class TodoManager {
             if a.priority != b.priority {
                 return a.priority.sortOrder < b.priority.sortOrder
             }
-            return a.modifiedAt > b.modifiedAt
+            switch (a.dueDate, b.dueDate) {
+            case (.some, .none): return true
+            case (.none, .some): return false
+            case let (.some(left), .some(right)):
+                if left != right { return left < right }
+            case (.none, .none):
+                break
+            }
+            if a.modifiedAt != b.modifiedAt { return a.modifiedAt > b.modifiedAt }
+            if a.createdAt != b.createdAt { return a.createdAt > b.createdAt }
+            return a.id.uuidString < b.id.uuidString
         }
     }
 
